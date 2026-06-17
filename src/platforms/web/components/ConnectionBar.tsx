@@ -155,12 +155,11 @@ export function ConnectionBar() {
             onChange={(e) => handleConnTypeChange(e.target.value as ConnectionType)}
             disabled={isConnected || isConnecting}
             className={cn(
-              "h-8 pl-8 pr-7 text-xs font-medium rounded border border-border bg-background",
-              "focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer",
-              "appearance-none transition-all",
-              "bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23888%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_4px_center]",
-              (isConnected || isConnecting) && "opacity-50 cursor-not-allowed"
-            )}
+               "h-8 pl-8 pr-7 text-xs font-medium rounded border border-border bg-background",
+               "focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer",
+               "transition-all",
+               (isConnected || isConnecting) && "opacity-50 cursor-not-allowed"
+             )}
           >
             {CONNECTION_TYPE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -194,8 +193,7 @@ export function ConnectionBar() {
               onChange={(e) => setSerialConfig((prev) => ({ ...prev, baudRate: Number(e.target.value) }))}
               className="h-8 px-2 text-xs rounded border border-border bg-background 
                          focus:outline-none focus:ring-1 focus:ring-ring font-mono
-                         appearance-none pr-6 cursor-pointer transition-all
-                         bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23888%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_4px_center]"
+                         cursor-pointer transition-all"
             >
               {BAUD_RATE_OPTIONS.map((rate) => (
                 <option key={rate} value={rate}>{rate}</option>
@@ -207,8 +205,7 @@ export function ConnectionBar() {
               onChange={(e) => setSerialConfig((prev) => ({ ...prev, parity: e.target.value as SerialConfig['parity'] }))}
               className="h-8 px-2 text-xs rounded border border-border bg-background 
                          focus:outline-none focus:ring-1 focus:ring-ring
-                         appearance-none pr-6 cursor-pointer transition-all
-                         bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23888%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_4px_center]"
+                         cursor-pointer transition-all"
             >
               {PARITY_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
