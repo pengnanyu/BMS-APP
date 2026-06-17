@@ -7,21 +7,26 @@ import { BAUD_RATE_OPTIONS, PARITY_OPTIONS, CONNECTION_TYPE_OPTIONS } from '@/sh
 import { cn } from '@/lib/utils';
 import { Bluetooth, Cable, Loader2, Sun, Moon, Monitor, Languages } from 'lucide-react';
 
-function useAutoWidthSelect(value: string, extraWidth = 28) {
+function useAutoWidthSelect(value: string, extraWidth = 34) {
   const ref = useRef<HTMLSelectElement>(null);
-  const measureRef = useRef<HTMLSpanElement>(null);
 
   const update = () => {
-    if (measureRef.current && ref.current) {
-      const w = measureRef.current.offsetWidth;
-      ref.current.style.width = `${w + extraWidth}px`;
-    }
+    const sel = ref.current;
+    if (!sel) return;
+    const text = sel.options[sel.selectedIndex]?.text || '';
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const style = getComputedStyle(sel);
+    ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    const textWidth = ctx.measureText(text).width;
+    sel.style.width = `${Math.ceil(textWidth) + extraWidth}px`;
   };
 
   useLayoutEffect(update, [value, extraWidth]);
   useEffect(update, [value, extraWidth]);
 
-  return { ref, measureRef };
+  return { ref };
 }
 
 const STATUS_I18N_KEYS: Record<ConnectionStatus, string> = {
@@ -116,13 +121,12 @@ function LanguageToggle() {
   return (
     <div className="relative shrink-0">
       <Languages className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-primary pointer-events-none" />
-      <span ref={autoWidth.measureRef} className="absolute invisible text-xs font-medium whitespace-nowrap" aria-hidden>{current.label}</span>
       <select
         ref={autoWidth.ref}
         value={current.code}
         onChange={handleChange}
         className={cn(
-          "h-8 pl-8 pr-2 text-xs font-medium rounded border border-border bg-background",
+          "h-8 pl-8 text-xs font-medium rounded border border-border bg-background",
           "focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer transition-all"
         )}
       >
@@ -165,9 +169,9 @@ export function ConnectionBar() {
   const connTypeLabel = t(CONN_TYPE_I18N[connType]);
   const parityLabel = t(PARITY_I18N[serialConfig.parity]);
 
-  const connTypeSelect = useAutoWidthSelect(connTypeLabel, 56);
-  const baudRateSelect = useAutoWidthSelect(String(serialConfig.baudRate));
-  const paritySelect = useAutoWidthSelect(parityLabel);
+  const connTypeSelect = useAutoWidthSelect(connTypeLabel, 58);
+  const baudRateSelect = useAutoWidthSelect(String(serialConfig.baudRate), 34);
+  const paritySelect = useAutoWidthSelect(parityLabel, 34);
 
   useEffect(() => {
     const unsubscribe = webBridge.onConnectionStatusChange((newStatus) => {
@@ -219,14 +223,13 @@ export function ConnectionBar() {
         <div className="w-px h-6 bg-border shrink-0" />
 
         <div className="relative">
-          <span ref={connTypeSelect.measureRef} className="absolute invisible text-xs font-medium whitespace-nowrap" aria-hidden>{connTypeLabel}</span>
-          <select
+           <select
             ref={connTypeSelect.ref}
             value={connType}
             onChange={(e) => handleConnTypeChange(e.target.value as ConnectionType)}
             disabled={isConnected || isConnecting}
             className={cn(
-               "h-8 pl-8 pr-7 text-xs font-medium rounded border border-border bg-background",
+               "h-8 pl-8 text-xs font-medium rounded border border-border bg-background",
                "focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer",
                "transition-all",
                (isConnected || isConnecting) && "opacity-50 cursor-not-allowed"
@@ -258,12 +261,11 @@ export function ConnectionBar() {
         ) : (
           <div className="flex items-center gap-2 animate-fade-in">
             <label className="text-xs text-muted-foreground whitespace-nowrap">{t('connection.baudRateLabel')}</label>
-            <span ref={baudRateSelect.measureRef} className="absolute invisible text-xs font-mono whitespace-nowrap" aria-hidden>{serialConfig.baudRate}</span>
             <select
               ref={baudRateSelect.ref}
               value={serialConfig.baudRate}
               onChange={(e) => setSerialConfig((prev) => ({ ...prev, baudRate: Number(e.target.value) }))}
-              className="h-8 px-2 text-xs rounded border border-border bg-background 
+              className="h-8 text-xs rounded border border-border bg-background 
                          focus:outline-none focus:ring-1 focus:ring-ring font-mono
                          cursor-pointer transition-all"
             >
@@ -272,12 +274,11 @@ export function ConnectionBar() {
               ))}
             </select>
             <label className="text-xs text-muted-foreground whitespace-nowrap">{t('connection.parityLabel')}</label>
-            <span ref={paritySelect.measureRef} className="absolute invisible text-xs whitespace-nowrap" aria-hidden>{parityLabel}</span>
             <select
               ref={paritySelect.ref}
               value={serialConfig.parity}
               onChange={(e) => setSerialConfig((prev) => ({ ...prev, parity: e.target.value as SerialConfig['parity'] }))}
-              className="h-8 px-2 text-xs rounded border border-border bg-background 
+              className="h-8 text-xs rounded border border-border bg-background 
                          focus:outline-none focus:ring-1 focus:ring-ring
                          cursor-pointer transition-all"
             >
