@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { ConnectionBar } from '@/components/ConnectionBar';
-import { BMSUI } from '@/components/BMSUI';
+import { BMSAppShell } from '@/components/BMSAppShell';
 import { bmsManager } from '@/lib/bms-manager';
 import type { ConnectionState, ConnectionType } from '@/lib/bridge';
 import { ThemeContext } from '@/lib/theme-context';
@@ -81,7 +81,7 @@ function App() {
         <ConnectionBar onData={handleData} onStateChange={handleStateChange} />
 
         <main style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-          <BMSUI />
+          <BMSAppShell />
           {isDemo && (
             <div style={{
               position: 'absolute', top: 8, right: 8, zIndex: 50,

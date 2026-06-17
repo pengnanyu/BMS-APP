@@ -1,65 +1,38 @@
-// ==================== BMS 数据管理器 ====================
-// 负责从 Bridge 接收数据、解析协议、定时刷新
-
 import { webBridge } from '@/lib/bridge';
 import type { ConnectionState } from '@/lib/bridge';
+import type { ParamItem, DeviceInfoSimple, AlarmInfo, ChartPoint } from '@/types/bms';
+import { getParamDefinitions } from '@/lib/param-definitions';
+import { isAlarmDefined } from '@/lib/alarm-definitions';
 
-// ==================== 数据类型定义 ====================
-
-/** 单体电芯数据 */
 export interface CellInfo {
   id: number;
-  voltage: number; // mV
-  temperature: number; // °C
+  voltage: number;
+  temperature: number;
 }
 
-/** 电池包数据 */
 export interface BatteryData {
-  totalVoltage: number; // V
-  current: number; // A
-  soc: number; // %
-  soh: number; // %
-  power: number; // W
-  capacity: number; // Ah
-  remainingCapacity: number; // Ah
+  totalVoltage: number;
+  current: number;
+  soc: number;
+  soh: number;
+  power: number;
+  capacity: number;
+  remainingCapacity: number;
   cycleCount: number;
-  maxCellVoltage: number; // mV
-  minCellVoltage: number; // mV
-  avgCellVoltage: number; // mV
-  maxCellTemp: number; // °C
-  minCellTemp: number; // °C
+  maxCellVoltage: number;
+  minCellVoltage: number;
+  avgCellVoltage: number;
+  maxCellTemp: number;
+  minCellTemp: number;
   cells: CellInfo[];
   timestamp: number;
 }
 
-/** 告警数据 */
-export interface AlarmInfo {
-  id: string;
-  level: 'info' | 'warning' | 'critical';
-  code: string;
-  message: string;
-  timestamp: number;
-}
-
-/** 曲线数据点 */
-export interface ChartPoint {
-  time: string;
-  voltage: number;
-  current: number;
-}
-
-/** 设备信息 */
-export interface DeviceInfo {
-  manufacturer: string;
-  model: string;
-  firmwareVersion: string;
-  serialNumber: string;
-  nominalCapacity: number;
-  nominalVoltage: number;
-  cellCount: number;
-}
-
-// ==================== 模拟数据生成 ====================
+type DataCallback = (data: BatteryData) => void;
+type AlarmCallback = (alarms: AlarmInfo[]) => void;
+type ChartCallback = (points: ChartPoint[]) => void;
+type StateCallback = (state: ConnectionState) => void;
+type ParamCallback = (params: ParamItem[]) => void;
 
 function generateMockBatteryData(cellCount: number = 16): BatteryData {
   const cells: CellInfo[] = [];
@@ -98,17 +71,11 @@ function generateMockBatteryData(cellCount: number = 16): BatteryData {
   };
 }
 
-// ==================== 数据管理器 ====================
-
-type DataCallback = (data: BatteryData) => void;
-type AlarmCallback = (alarms: AlarmInfo[]) => void;
-type ChartCallback = (points: ChartPoint[]) => void;
-type StateCallback = (state: ConnectionState) => void;
-
 class BMSDataManager {
   private batteryData: BatteryData | null = null;
   private alarms: AlarmInfo[] = [];
   private chartPoints: ChartPoint[] = [];
+  private paramItems: ParamItem[] = [];
   private cellCount = 16;
   private refreshTimer: ReturnType<typeof setInterval> | null = null;
   private isDemoMode = false;
@@ -117,13 +84,13 @@ class BMSDataManager {
   private alarmCallbacks = new Set<AlarmCallback>();
   private chartCallbacks = new Set<ChartCallback>();
   private stateCallbacks = new Set<StateCallback>();
+  private paramCallbacks = new Set<ParamCallback>();
 
-  // 获取数据
   getBatteryData(): BatteryData | null { return this.batteryData; }
   getAlarms(): AlarmInfo[] { return [...this.alarms]; }
   getChartPoints(): ChartPoint[] { return [...this.chartPoints]; }
+  getParamItems(): ParamItem[] { return [...this.paramItems]; }
 
-  // 注册回调
   onData(cb: DataCallback) { this.dataCallbacks.add(cb); }
   offData(cb: DataCallback) { this.dataCallbacks.delete(cb); }
   onAlarms(cb: AlarmCallback) { this.alarmCallbacks.add(cb); }
@@ -132,14 +99,14 @@ class BMSDataManager {
   offChart(cb: ChartCallback) { this.chartCallbacks.delete(cb); }
   onState(cb: StateCallback) { this.stateCallbacks.add(cb); }
   offState(cb: StateCallback) { this.stateCallbacks.delete(cb); }
+  onParams(cb: ParamCallback) { this.paramCallbacks.add(cb); }
+  offParams(cb: ParamCallback) { this.paramCallbacks.delete(cb); }
 
-  // 启动数据刷新（1 秒间隔）
   startRefresh() {
     if (this.refreshTimer) return;
     this.refreshTimer = setInterval(() => this.refresh(), 1000);
   }
 
-  // 停止刷新
   stopRefresh() {
     if (this.refreshTimer) {
       clearInterval(this.refreshTimer);
@@ -147,14 +114,10 @@ class BMSDataManager {
     }
   }
 
-  // 刷新数据
   private refresh() {
-    // 实际项目中：从 Bridge 接收的真实数据解析
-    // 目前使用模拟数据
     const data = generateMockBatteryData(this.cellCount);
     this.batteryData = data;
 
-    // 更新曲线数据
     const time = new Date().toLocaleTimeString('zh-CN', { hour12: false });
     this.chartPoints.push({
       time,
@@ -163,15 +126,12 @@ class BMSDataManager {
     });
     if (this.chartPoints.length > 120) this.chartPoints.shift();
 
-    // 检查告警
     this.checkAlarms(data);
 
-    // 触发回调
     this.dataCallbacks.forEach(cb => cb(data));
     this.chartCallbacks.forEach(cb => cb(this.chartPoints));
   }
 
-  // 检查告警条件
   private checkAlarms(data: BatteryData) {
     if (data.maxCellTemp > 45) {
       this.addAlarm({
@@ -204,24 +164,53 @@ class BMSDataManager {
   }
 
   private addAlarm(alarm: AlarmInfo) {
+    if (!isAlarmDefined(alarm.code)) return;
     this.alarms.push(alarm);
     if (this.alarms.length > 100) this.alarms.shift();
     this.alarmCallbacks.forEach(cb => cb(this.alarms));
   }
 
-  // 清除告警
   clearAlarms() {
     this.alarms = [];
     this.alarmCallbacks.forEach(cb => cb([]));
   }
 
-  // 清除曲线数据
   clearChart() {
     this.chartPoints = [];
     this.chartCallbacks.forEach(cb => cb([]));
   }
 
-  // Demo 模式
+  async readParams(): Promise<ParamItem[]> {
+    if (this.isDemoMode) {
+      this.paramItems = getParamDefinitions().map(p => ({
+        ...p,
+        value: p.type === 'number' ? (p.value as number) + Math.round((Math.random() - 0.5) * 10) / 100 : p.value,
+      }));
+    } else {
+      this.paramItems = getParamDefinitions();
+    }
+    this.paramCallbacks.forEach(cb => cb(this.paramItems));
+    return [...this.paramItems];
+  }
+
+  async writeParams(params: ParamItem[]): Promise<boolean> {
+    this.paramItems = params.map(p => ({ ...p }));
+    this.paramCallbacks.forEach(cb => cb(this.paramItems));
+    return true;
+  }
+
+  getDeviceInfo(): DeviceInfoSimple {
+    if (this.batteryData) {
+      return {
+        cellCount: this.batteryData.cells.length,
+        voltageDiff: this.batteryData.maxCellVoltage - this.batteryData.minCellVoltage,
+        avgCellVoltage: this.batteryData.avgCellVoltage,
+        nominalCapacity: 100,
+      };
+    }
+    return { cellCount: 16, voltageDiff: 0, avgCellVoltage: 3300, nominalCapacity: 100 };
+  }
+
   setDemoMode(enabled: boolean) {
     this.isDemoMode = enabled;
     if (enabled) {
@@ -233,10 +222,7 @@ class BMSDataManager {
 
   isDemo(): boolean { return this.isDemoMode; }
 
-  // 处理 Bridge 接收到的原始数据
   handleRawData(data: Uint8Array) {
-    // 实际项目中在这里解析协议帧
-    // 暂时使用模拟数据
     const battery = generateMockBatteryData(this.cellCount);
     this.batteryData = battery;
 
@@ -254,15 +240,14 @@ class BMSDataManager {
     this.chartCallbacks.forEach(cb => cb(this.chartPoints));
   }
 
-  // 清理
   destroy() {
     this.stopRefresh();
     this.dataCallbacks.clear();
     this.alarmCallbacks.clear();
     this.chartCallbacks.clear();
     this.stateCallbacks.clear();
+    this.paramCallbacks.clear();
   }
 }
 
-// 全局单例
 export const bmsManager = new BMSDataManager();

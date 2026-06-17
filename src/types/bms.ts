@@ -1,38 +1,32 @@
-// ==================== BMS 核心数据类型 ====================
-
-/** 单体电芯数据 */
 export interface CellData {
   id: number;
-  voltage: number; // mV
-  temperature: number; // °C
-  internalResistance: number; // mΩ
+  voltage: number;
+  temperature: number;
+  internalResistance: number;
 }
 
-/** 电池包状态 */
 export interface BatteryPackStatus {
-  totalVoltage: number; // V
-  current: number; // A (充电正，放电负)
-  soc: number; // % 0-100
-  soh: number; // % 0-100
-  power: number; // W
-  capacity: number; // Ah
-  remainingCapacity: number; // Ah
+  totalVoltage: number;
+  current: number;
+  soc: number;
+  soh: number;
+  power: number;
+  capacity: number;
+  remainingCapacity: number;
   cycleCount: number;
-  totalEnergy: number; // kWh
-  maxCellVoltage: number; // mV
-  minCellVoltage: number; // mV
-  avgCellVoltage: number; // mV
-  maxCellTemp: number; // °C
-  minCellTemp: number; // °C
-  avgCellTemp: number; // °C
+  totalEnergy: number;
+  maxCellVoltage: number;
+  minCellVoltage: number;
+  avgCellVoltage: number;
+  maxCellTemp: number;
+  minCellTemp: number;
+  avgCellTemp: number;
   cells: CellData[];
   timestamp: number;
 }
 
-/** 告警级别 */
 export type AlarmLevel = 'info' | 'warning' | 'critical';
 
-/** 告警项 */
 export interface Alarm {
   id: string;
   level: AlarmLevel;
@@ -44,39 +38,31 @@ export interface Alarm {
   acknowledged: boolean;
 }
 
-/** GPS 定位数据 */
 export interface GPSData {
   latitude: number;
   longitude: number;
-  altitude: number; // m
-  speed: number; // km/h
-  heading: number; // degrees
-  accuracy: number; // m
+  altitude: number;
+  speed: number;
+  heading: number;
+  accuracy: number;
   timestamp: number;
 }
 
-/** GPS 轨迹点 */
 export interface GPSTrackPoint extends GPSData {
   id: string;
 }
 
-/** 连接类型 */
 export type ConnectionType = 'bluetooth' | 'serial' | 'mqtt';
 
-/** 连接状态 */
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error';
 
-/** 连接配置 */
 export interface ConnectionConfig {
   type: ConnectionType;
-  // Bluetooth
   bluetoothDeviceId?: string;
   bluetoothServiceUUID?: string;
   bluetoothCharacteristicUUID?: string;
-  // Serial
   serialPort?: SerialPort;
   serialBaudRate?: number;
-  // MQTT
   mqttBrokerUrl?: string;
   mqttTopic?: string;
   mqttClientId?: string;
@@ -84,19 +70,17 @@ export interface ConnectionConfig {
   mqttPassword?: string;
 }
 
-/** 设备信息 */
 export interface DeviceInfo {
   manufacturer: string;
   model: string;
   firmwareVersion: string;
   hardwareVersion: string;
   serialNumber: string;
-  nominalCapacity: number; // Ah
-  nominalVoltage: number; // V
+  nominalCapacity: number;
+  nominalVoltage: number;
   cellCount: number;
 }
 
-/** 历史数据记录 */
 export interface HistoryRecord {
   timestamp: number;
   voltage: number;
@@ -107,7 +91,58 @@ export interface HistoryRecord {
   minCellTemp: number;
 }
 
-/** 串口类型声明（Web Serial API） */
+export type ParamInputType = 'number' | 'select' | 'text';
+
+export interface ParamOption {
+  label: string;
+  value: number | string;
+}
+
+export interface ParamItem {
+  key: string;
+  label: string;
+  value: number | string;
+  unit: string;
+  min?: number;
+  max?: number;
+  step?: number;
+  type: ParamInputType;
+  options?: ParamOption[];
+  group: string;
+}
+
+export interface PresetConfig {
+  name: string;
+  code: string;
+  description: string;
+  params: Record<string, number | string>;
+}
+
+export interface AlarmInfo {
+  id: string;
+  level: 'info' | 'warning' | 'critical';
+  code: string;
+  message: string;
+  timestamp: number;
+}
+
+export interface ChartPoint {
+  time: string;
+  voltage: number;
+  current: number;
+}
+
+export interface DeviceInfoSimple {
+  cellCount: number;
+  voltageDiff: number;
+  avgCellVoltage: number;
+  nominalCapacity: number;
+}
+
+export type TabKey = 'battery' | 'config' | 'alarm' | 'command';
+
+export type LayoutMode = 'mobile' | 'tablet' | 'desktop';
+
 export interface SerialPort {
   open(options: { baudRate: number }): Promise<void>;
   close(): Promise<void>;
