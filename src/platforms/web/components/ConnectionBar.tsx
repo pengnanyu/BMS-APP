@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { webBridge } from '@/platforms/web/lib/web-bridge';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme, type Theme } from '@/components/theme-provider';
 import type { ConnectionType, ConnectionStatus, BluetoothConfig, SerialConfig } from '@/shared/types/bridge';
 import { BAUD_RATE_OPTIONS, PARITY_OPTIONS, CONNECTION_TYPE_OPTIONS } from '@/shared/types/bridge';
 import { cn } from '@/lib/utils';

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
-type Theme = 'dark' | 'light' | 'system';
+export type Theme = 'dark' | 'light' | 'system';
 
 interface ThemeProviderProps {
   children: React.ReactNode;
@@ -12,11 +12,6 @@ interface ThemeProviderState {
   theme: Theme;
   setTheme: (theme: Theme) => void;
 }
-
-const initialState: ThemeProviderState = {
-  theme: 'system',
-  setTheme: () => null,
-};
 
 const ThemeProviderContext = createContext<ThemeProviderState | undefined>(undefined);
 
