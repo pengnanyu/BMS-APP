@@ -152,6 +152,17 @@ export function ConnectionBar() {
     parity: 'none',
   });
 
+  const CONN_TYPE_I18N: Record<string, string> = {
+    bluetooth: 'connection.typeBluetooth',
+    serial: 'connection.typeSerial',
+  };
+
+  const PARITY_I18N: Record<string, string> = {
+    none: 'connection.parityNone',
+    odd: 'connection.parityOdd',
+    even: 'connection.parityEven',
+  };
+
   const connTypeLabel = t(CONN_TYPE_I18N[connType]);
   const parityLabel = t(PARITY_I18N[serialConfig.parity]);
 
@@ -194,17 +205,6 @@ export function ConnectionBar() {
 
   const isConnected = status === 'connected';
   const isConnecting = status === 'connecting';
-
-  const CONN_TYPE_I18N: Record<string, string> = {
-    bluetooth: 'connection.typeBluetooth',
-    serial: 'connection.typeSerial',
-  };
-
-  const PARITY_I18N: Record<string, string> = {
-    none: 'connection.parityNone',
-    odd: 'connection.parityOdd',
-    even: 'connection.parityEven',
-  };
 
   return (
     <header className="relative z-50 bg-card border-b border-border shadow-sm">
