@@ -80,27 +80,37 @@ function ThemeToggle() {
 
 function LanguageToggle() {
   const { i18n } = useTranslation();
-  const nextLng = i18n.language === 'zh' ? 'en' : 'zh';
-  const label = i18n.language === 'zh' ? 'EN' : '中';
 
-  const toggle = useCallback(() => {
-    i18n.changeLanguage(nextLng);
-    document.documentElement.lang = nextLng === 'zh' ? 'zh-CN' : 'en';
-    window.dispatchEvent(new CustomEvent('aibms:locale-change', { detail: { locale: nextLng } }));
-  }, [i18n, nextLng]);
+  const LANGUAGES = [
+    { code: 'zh', label: '中文' },
+    { code: 'en', label: 'English' },
+  ];
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const lng = e.target.value;
+    i18n.changeLanguage(lng);
+    document.documentElement.lang = lng === 'zh' ? 'zh-CN' : lng;
+    window.dispatchEvent(new CustomEvent('aibms:locale-change', { detail: { locale: lng } }));
+  }, [i18n]);
+
+  const current = LANGUAGES.find((l) => i18n.language.startsWith(l.code)) || LANGUAGES[0];
 
   return (
-    <button
-      onClick={toggle}
-      className={cn(
-        "h-8 w-8 flex items-center justify-center rounded border border-border",
-        "hover:bg-accent hover:text-accent-foreground transition-colors shrink-0"
-      )}
-      title={nextLng === 'zh' ? '中文' : 'English'}
-    >
-      <Languages className="w-4 h-4" />
-      <span className="text-[9px] font-bold absolute">{label}</span>
-    </button>
+    <div className="relative shrink-0">
+      <Languages className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-primary pointer-events-none" />
+      <select
+        value={current.code}
+        onChange={handleChange}
+        className={cn(
+          "h-8 pl-8 pr-2 text-xs font-medium rounded border border-border bg-background",
+          "focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer transition-all"
+        )}
+      >
+        {LANGUAGES.map((lang) => (
+          <option key={lang.code} value={lang.code}>{lang.label}</option>
+        ))}
+      </select>
+    </div>
   );
 }
 
