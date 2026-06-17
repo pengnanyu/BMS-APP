@@ -1,0 +1,1 @@
+export default {"1781676828880":{"entry":"/home/user/workspace/functions/index.ts","port":18080,"localUpstream":""}}

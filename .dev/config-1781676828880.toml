@@ -1,0 +1,6 @@
+
+port = 3322
+[debugger_cli_options]
+enable = true
+code_path = "/home/user/workspace/.dev/index-1781676828880.js"
+conf_path = "/home/user/.ew2/er.conf"
