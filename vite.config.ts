@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   plugins: [
-    ...ve saPlugins,
+    ...vesaPlugins,
     tailwindcss(),
     react(),
     VitePWA({
