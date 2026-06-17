@@ -12,8 +12,7 @@ function useAutoWidthSelect(value: string, extraWidth = 28) {
   const measureRef = useRef<HTMLSpanElement>(null);
 
   const update = () => {
-    if (ref.current && measureRef.current) {
-      measureRef.current.textContent = ref.current.options[ref.current.selectedIndex]?.text || '';
+    if (measureRef.current && ref.current) {
       const w = measureRef.current.offsetWidth;
       ref.current.style.width = `${w + extraWidth}px`;
     }
@@ -117,7 +116,7 @@ function LanguageToggle() {
   return (
     <div className="relative shrink-0">
       <Languages className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-primary pointer-events-none" />
-      <span ref={autoWidth.measureRef} className="absolute invisible text-xs font-medium whitespace-nowrap" aria-hidden />
+      <span ref={autoWidth.measureRef} className="absolute invisible text-xs font-medium whitespace-nowrap" aria-hidden>{current.label}</span>
       <select
         ref={autoWidth.ref}
         value={current.code}
@@ -220,7 +219,7 @@ export function ConnectionBar() {
         <div className="w-px h-6 bg-border shrink-0" />
 
         <div className="relative">
-          <span ref={connTypeSelect.measureRef} className="absolute invisible text-xs font-medium whitespace-nowrap" aria-hidden />
+          <span ref={connTypeSelect.measureRef} className="absolute invisible text-xs font-medium whitespace-nowrap" aria-hidden>{connTypeLabel}</span>
           <select
             ref={connTypeSelect.ref}
             value={connType}
@@ -259,7 +258,7 @@ export function ConnectionBar() {
         ) : (
           <div className="flex items-center gap-2 animate-fade-in">
             <label className="text-xs text-muted-foreground whitespace-nowrap">{t('connection.baudRateLabel')}</label>
-            <span ref={baudRateSelect.measureRef} className="absolute invisible text-xs font-mono whitespace-nowrap" aria-hidden />
+            <span ref={baudRateSelect.measureRef} className="absolute invisible text-xs font-mono whitespace-nowrap" aria-hidden>{serialConfig.baudRate}</span>
             <select
               ref={baudRateSelect.ref}
               value={serialConfig.baudRate}
@@ -273,7 +272,7 @@ export function ConnectionBar() {
               ))}
             </select>
             <label className="text-xs text-muted-foreground whitespace-nowrap">{t('connection.parityLabel')}</label>
-            <span ref={paritySelect.measureRef} className="absolute invisible text-xs whitespace-nowrap" aria-hidden />
+            <span ref={paritySelect.measureRef} className="absolute invisible text-xs whitespace-nowrap" aria-hidden>{parityLabel}</span>
             <select
               ref={paritySelect.ref}
               value={serialConfig.parity}

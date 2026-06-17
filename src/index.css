@@ -199,8 +199,6 @@ html.dark {
     background-repeat: no-repeat;
     background-position: right 4px center;
     padding-right: 1.5rem;
-    field-sizing: content;
-    min-width: 2rem;
   }
 
   html.dark select {
