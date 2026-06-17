@@ -7,7 +7,7 @@ import { BAUD_RATE_OPTIONS, PARITY_OPTIONS, CONNECTION_TYPE_OPTIONS } from '@/sh
 import { cn } from '@/lib/utils';
 import { Bluetooth, Cable, Loader2, Sun, Moon, Monitor, Languages } from 'lucide-react';
 
-function useAutoWidthSelect(value: string) {
+function useAutoWidthSelect(value: string, extraWidth = 28) {
   const ref = useRef<HTMLSelectElement>(null);
   const measureRef = useRef<HTMLSpanElement>(null);
 
@@ -15,9 +15,9 @@ function useAutoWidthSelect(value: string) {
     if (ref.current && measureRef.current) {
       measureRef.current.textContent = ref.current.options[ref.current.selectedIndex]?.text || '';
       const w = measureRef.current.offsetWidth;
-      ref.current.style.width = `${w + 28}px`;
+      ref.current.style.width = `${w + extraWidth}px`;
     }
-  }, [value]);
+  }, [value, extraWidth]);
 
   return { ref, measureRef };
 }
@@ -102,13 +102,13 @@ function LanguageToggle() {
   ];
 
   const current = LANGUAGES.find((l) => i18n.language.startsWith(l.code)) || LANGUAGES[0];
-  const autoWidth = useAutoWidthSelect(current.code);
+  const autoWidth = useAutoWidthSelect(current.code, 56);
 
   useEffect(() => {
     if (autoWidth.ref.current && autoWidth.measureRef.current) {
       autoWidth.measureRef.current.textContent = current.label;
       const w = autoWidth.measureRef.current.offsetWidth;
-      autoWidth.ref.current.style.width = `${w + 28}px`;
+      autoWidth.ref.current.style.width = `${w + 56}px`;
     }
   }, [current.code]);
 
@@ -157,7 +157,7 @@ export function ConnectionBar() {
     parity: 'none',
   });
 
-  const connTypeSelect = useAutoWidthSelect(connType);
+  const connTypeSelect = useAutoWidthSelect(connType, 56);
   const baudRateSelect = useAutoWidthSelect(String(serialConfig.baudRate));
   const paritySelect = useAutoWidthSelect(serialConfig.parity);
 
