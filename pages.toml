@@ -2,15 +2,15 @@
 # https://developers.cloudflare.com/pages/configuration/
 
 [build]
-  command = "npm run build"
+  command = "bun run build"
   publish = "dist"
 
 [[env.production]]
   [build]
-    command = "npm run build"
+    command = "bun run build"
     publish = "dist"
 
 [[env.preview]]
   [build]
-    command = "npm run build"
+    command = "bun run build"
     publish = "dist"

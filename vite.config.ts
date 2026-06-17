@@ -1,10 +1,11 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import tailwindcss from "@tailwindcss/vite";
-import path from "path";
+import { fileURLToPath, URL } from "node:url";
 import fs from "fs";
 
-const hasEsaConfig = fs.existsSync(path.resolve(__dirname, "esa.jsonc"));
+const __dirname = fileURLToPath(new URL(".", import.meta.url));
+const hasEsaConfig = fs.existsSync(new URL("esa.jsonc", import.meta.url));
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -28,7 +29,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [tailwindcss(), react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
   build: {
