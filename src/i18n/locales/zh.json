@@ -1,0 +1,55 @@
+{
+  "app": {
+    "title": "AIBMS - 智能电池管理系统",
+    "metaDescription": "AIBMS 智能电池管理上位机系统"
+  },
+  "connection": {
+    "statusDisconnected": "未连接",
+    "statusConnecting": "连接中...",
+    "statusConnected": "已连接",
+    "statusError": "连接错误",
+    "filterLabel": "过滤:",
+    "baudRateLabel": "波特率:",
+    "parityLabel": "校验:",
+    "connect": "连接",
+    "disconnect": "断开",
+    "parityNone": "无",
+    "parityOdd": "奇校验",
+    "parityEven": "偶校验",
+    "typeBluetooth": "蓝牙",
+    "typeSerial": "串口",
+    "errorBanner": "连接异常，请检查设备连接"
+  },
+  "theme": {
+    "followSystem": "跟随系统",
+    "darkMode": "深色模式",
+    "lightMode": "浅色模式"
+  },
+  "dashboard": {
+    "title": "BMS 数据面板",
+    "subtitle": "连接设备后，UI 界面将在此处加载显示",
+    "batteryStatus": "电池状态",
+    "waitingForConnection": "等待连接",
+    "voltageCurrent": "电压 / 电流",
+    "temperature": "温度",
+    "soc": "SOC",
+    "tipLabel": "提示：",
+    "tipMessage": "外部 UI 服务（ui.aibms.net）开发完成后，此占位区域将替换为 iframe 加载真实 UI。当前可通过顶部控制栏测试蓝牙/串口连接功能。"
+  },
+  "bridge": {
+    "alreadyConnected": "已连接或正在连接中",
+    "connectionFailed": "连接失败",
+    "connectionFailedWithMsg": "连接失败: {{message}}",
+    "disconnected": "已断开连接",
+    "deviceNotConnected": "设备未连接",
+    "sendDataFailed": "数据发送失败",
+    "bluetoothNotSupported": "浏览器不支持蓝牙 API",
+    "serialNotSupported": "浏览器不支持串口 API",
+    "deviceDisconnected": "设备已断开",
+    "bluetoothDeviceDisconnected": "蓝牙设备已断开",
+    "characteristicNotFound": "未找到指定的特征值: {{missing}}",
+    "connectedBluetooth": "已连接: {{deviceName}}",
+    "connectedSerial": "串口已连接 ({{baudRate}}bps)",
+    "unknownDevice": "未知设备"
+  }
+}

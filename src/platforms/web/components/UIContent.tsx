@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { webBridge } from '@/platforms/web/lib/web-bridge';
 import type { ConnectionStatus } from '@/shared/types/bridge';
 import { cn } from '@/lib/utils';
-import { WifiOff, Battery, BatteryCharging, Zap, Thermometer, Gauge } from 'lucide-react';
+import { WifiOff, Battery, Zap, Thermometer, Gauge } from 'lucide-react';
 
-/** UI 内容区 - 占位展示（暂不加载外部 UI） */
 export function UIContent() {
+  const { t } = useTranslation();
   const [connStatus, setConnStatus] = useState<ConnectionStatus>('disconnected');
 
-  // 监听连接状态变化
   useEffect(() => {
     const unsubscribe = webBridge.onConnectionStatusChange((status) => {
       setConnStatus(status);
@@ -18,17 +18,14 @@ export function UIContent() {
 
   return (
     <div className="relative flex-1 overflow-hidden bg-background">
-      {/* 连接状态横幅（错误时显示） */}
       {connStatus === 'error' && (
         <div className="absolute top-0 left-0 right-0 z-20 bg-destructive/10 border-b border-destructive/20 px-4 py-1.5 flex items-center gap-2 animate-slide-down">
           <WifiOff className="w-3.5 h-3.5 text-destructive shrink-0" />
-          <span className="text-xs text-destructive font-medium">连接异常，请检查设备连接</span>
+          <span className="text-xs text-destructive font-medium">{t('connection.errorBanner')}</span>
         </div>
       )}
 
-      {/* 占位内容区 - 等待 UI 开发完成后替换为 iframe */}
       <div className="h-full flex flex-col items-center justify-center p-8 animate-fade-in">
-        {/* 装饰性背景网格 */}
         <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]"
           style={{
             backgroundImage: `
@@ -40,9 +37,7 @@ export function UIContent() {
           }}
         />
 
-        {/* 主内容 */}
         <div className="relative z-10 flex flex-col items-center gap-6 max-w-lg">
-          {/* Logo 大图标 */}
           <div className="w-20 h-20 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center p-3">
             <img
               src="/aibms-logo.png"
@@ -51,50 +46,46 @@ export function UIContent() {
             />
           </div>
 
-          {/* 标题 */}
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight">
-              BMS 数据面板
+              {t('dashboard.title')}
             </h1>
             <p className="text-sm text-muted-foreground mt-1.5">
-              连接设备后，UI 界面将在此处加载显示
+              {t('dashboard.subtitle')}
             </p>
           </div>
 
-          {/* 状态卡片 */}
           <div className="w-full grid grid-cols-2 gap-3 mt-4">
             <StatusCard
               icon={<Battery className="w-4 h-4" />}
-              label="电池状态"
-              value="等待连接"
+              label={t('dashboard.batteryStatus')}
+              value={t('dashboard.waitingForConnection')}
               muted
             />
             <StatusCard
               icon={<Zap className="w-4 h-4" />}
-              label="电压 / 电流"
+              label={t('dashboard.voltageCurrent')}
               value="-- V / -- A"
               muted
             />
             <StatusCard
               icon={<Thermometer className="w-4 h-4" />}
-              label="温度"
+              label={t('dashboard.temperature')}
               value="-- °C"
               muted
             />
             <StatusCard
               icon={<Gauge className="w-4 h-4" />}
-              label="SOC"
+              label={t('dashboard.soc')}
               value="-- %"
               muted
             />
           </div>
 
-          {/* 提示信息 */}
           <div className="w-full mt-2 rounded-lg border border-border bg-card/50 p-4">
             <p className="text-xs text-muted-foreground leading-relaxed">
-              <span className="font-medium text-foreground">提示：</span>
-              外部 UI 服务（ui.aibms.net）开发完成后，此占位区域将替换为 iframe 加载真实 UI。
-              当前可通过顶部控制栏测试蓝牙/串口连接功能。
+              <span className="font-medium text-foreground">{t('dashboard.tipLabel')}</span>
+              {t('dashboard.tipMessage')}
             </p>
           </div>
         </div>
@@ -103,7 +94,6 @@ export function UIContent() {
   );
 }
 
-/** 状态卡片组件 */
 function StatusCard({
   icon,
   label,

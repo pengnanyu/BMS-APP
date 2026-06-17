@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import i18n from '@/i18n';
 import type {
   ConnectionConfig,
   ConnectionStatus,
@@ -50,7 +51,7 @@ class WebBridgeManager implements WebBridgeAPI {
 
   async connect(): Promise<boolean> {
     if (this._status === 'connected' || this._status === 'connecting') {
-      toast.warning('已连接或正在连接中');
+      toast.warning(i18n.t('bridge.alreadyConnected'));
       return false;
     }
 
@@ -63,9 +64,9 @@ class WebBridgeManager implements WebBridgeAPI {
         return await this.connectSerial();
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : '连接失败';
+      const message = error instanceof Error ? error.message : i18n.t('bridge.connectionFailed');
       this.setStatus('error', message);
-      toast.error(`连接失败: ${message}`);
+      toast.error(i18n.t('bridge.connectionFailedWithMsg', { message }));
       return false;
     }
   }
@@ -81,7 +82,7 @@ class WebBridgeManager implements WebBridgeAPI {
       console.error('Disconnect error:', error);
     }
     this.setStatus('disconnected');
-    toast.info('已断开连接');
+    toast.info(i18n.t('bridge.disconnected'));
   }
 
   getConnectionStatus(): ConnectionStatus {
@@ -90,7 +91,7 @@ class WebBridgeManager implements WebBridgeAPI {
 
   async sendData(data: Uint8Array): Promise<boolean> {
     if (this._status !== 'connected') {
-      toast.warning('设备未连接');
+      toast.warning(i18n.t('bridge.deviceNotConnected'));
       return false;
     }
 
@@ -111,7 +112,7 @@ class WebBridgeManager implements WebBridgeAPI {
       }
     } catch (error) {
       console.error('Send data error:', error);
-      toast.error('数据发送失败');
+      toast.error(i18n.t('bridge.sendDataFailed'));
       return false;
     }
   }
@@ -156,7 +157,7 @@ class WebBridgeManager implements WebBridgeAPI {
 
   private async connectBluetooth(): Promise<boolean> {
     if (!('bluetooth' in navigator)) {
-      throw new Error('浏览器不支持蓝牙 API');
+      throw new Error(i18n.t('bridge.bluetoothNotSupported'));
     }
 
     const { nameFilter, serviceUUID, notifyUUID, writeUUID } = this._config.bluetooth;
@@ -179,8 +180,8 @@ class WebBridgeManager implements WebBridgeAPI {
     device.addEventListener('gattserverdisconnected', () => {
       this._bluetoothDevice = null;
       this._bluetoothCharacteristic = null;
-      this.setStatus('disconnected', '设备已断开');
-      toast.warning('蓝牙设备已断开');
+      this.setStatus('disconnected', i18n.t('bridge.deviceDisconnected'));
+      toast.warning(i18n.t('bridge.bluetoothDeviceDisconnected'));
     });
 
     const server = await device.gatt!.connect();
@@ -235,7 +236,7 @@ class WebBridgeManager implements WebBridgeAPI {
       const missing = [];
       if (!notifyChar) missing.push(`Notify(${notifyUUID})`);
       if (!writeChar) missing.push(`Write(${writeUUID})`);
-      throw new Error(`未找到指定的特征值: ${missing.join(', ')}`);
+      throw new Error(i18n.t('bridge.characteristicNotFound', { missing: missing.join(', ') }));
     }
 
     this._bluetoothCharacteristic = writeChar;
@@ -250,8 +251,9 @@ class WebBridgeManager implements WebBridgeAPI {
       }
     });
 
-    this.setStatus('connected', `已连接: ${device.name || '未知设备'}`);
-    toast.success(`已连接: ${device.name || '未知设备'}`);
+    const deviceName = device.name || i18n.t('bridge.unknownDevice');
+    this.setStatus('connected', i18n.t('bridge.connectedBluetooth', { deviceName }));
+    toast.success(i18n.t('bridge.connectedBluetooth', { deviceName }));
     return true;
   }
 
@@ -267,7 +269,7 @@ class WebBridgeManager implements WebBridgeAPI {
 
   private async connectSerial(): Promise<boolean> {
     if (!('serial' in navigator)) {
-      throw new Error('浏览器不支持串口 API');
+      throw new Error(i18n.t('bridge.serialNotSupported'));
     }
 
     const { baudRate, dataBits, stopBits, parity } = this._config.serial;
@@ -288,8 +290,8 @@ class WebBridgeManager implements WebBridgeAPI {
 
     this._serialWriter = port.writable!.getWriter();
 
-    this.setStatus('connected', `串口已连接 (${baudRate}bps)`);
-    toast.success(`串口已连接 (${baudRate}bps)`);
+    this.setStatus('connected', i18n.t('bridge.connectedSerial', { baudRate }));
+    toast.success(i18n.t('bridge.connectedSerial', { baudRate }));
     return true;
   }
 

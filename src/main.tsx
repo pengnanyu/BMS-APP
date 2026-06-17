@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { WebContainer } from "@/platforms/web/WebContainer";
+import i18n, { STORAGE_KEY as LOCALE_KEY } from "@/i18n";
 import "./index.css";
 
 // 在 React 渲染前先应用主题，避免闪烁
@@ -18,6 +19,18 @@ import "./index.css";
     root.classList.add(theme);
   }
 })();
+
+// 初始化页面语言和标题
+(function applyInitialLocale() {
+  const lng = localStorage.getItem(LOCALE_KEY) || 'zh';
+  document.documentElement.lang = lng === 'zh' ? 'zh-CN' : 'en';
+  document.title = i18n.t('app.title');
+})();
+
+i18n.on('languageChanged', (lng) => {
+  document.documentElement.lang = lng === 'zh' ? 'zh-CN' : 'en';
+  document.title = i18n.t('app.title');
+});
 
 const queryClient = new QueryClient({
   defaultOptions: {

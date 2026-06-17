@@ -1,0 +1,55 @@
+{
+  "app": {
+    "title": "AIBMS - Smart Battery Management System",
+    "metaDescription": "AIBMS Smart Battery Management Host System"
+  },
+  "connection": {
+    "statusDisconnected": "Disconnected",
+    "statusConnecting": "Connecting...",
+    "statusConnected": "Connected",
+    "statusError": "Connection Error",
+    "filterLabel": "Filter:",
+    "baudRateLabel": "Baud Rate:",
+    "parityLabel": "Parity:",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "parityNone": "None",
+    "parityOdd": "Odd",
+    "parityEven": "Even",
+    "typeBluetooth": "Bluetooth",
+    "typeSerial": "Serial",
+    "errorBanner": "Connection error, please check device"
+  },
+  "theme": {
+    "followSystem": "Follow System",
+    "darkMode": "Dark Mode",
+    "lightMode": "Light Mode"
+  },
+  "dashboard": {
+    "title": "BMS Dashboard",
+    "subtitle": "Connect a device to load the UI here",
+    "batteryStatus": "Battery Status",
+    "waitingForConnection": "Waiting",
+    "voltageCurrent": "Voltage / Current",
+    "temperature": "Temperature",
+    "soc": "SOC",
+    "tipLabel": "Tip:",
+    "tipMessage": "The external UI service (ui.aibms.net) will replace this placeholder with an iframe when ready. You can test Bluetooth/Serial connections via the toolbar above."
+  },
+  "bridge": {
+    "alreadyConnected": "Already connected or connecting",
+    "connectionFailed": "Connection failed",
+    "connectionFailedWithMsg": "Connection failed: {{message}}",
+    "disconnected": "Disconnected",
+    "deviceNotConnected": "Device not connected",
+    "sendDataFailed": "Failed to send data",
+    "bluetoothNotSupported": "Bluetooth API not supported",
+    "serialNotSupported": "Serial API not supported",
+    "deviceDisconnected": "Device disconnected",
+    "bluetoothDeviceDisconnected": "Bluetooth device disconnected",
+    "characteristicNotFound": "Characteristic not found: {{missing}}",
+    "connectedBluetooth": "Connected: {{deviceName}}",
+    "connectedSerial": "Serial connected ({{baudRate}}bps)",
+    "unknownDevice": "Unknown Device"
+  }
+}

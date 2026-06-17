@@ -1,13 +1,21 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { webBridge } from '@/platforms/web/lib/web-bridge';
 import { useTheme, type Theme } from '@/components/theme-provider';
 import type { ConnectionType, ConnectionStatus, BluetoothConfig, SerialConfig } from '@/shared/types/bridge';
 import { BAUD_RATE_OPTIONS, PARITY_OPTIONS, CONNECTION_TYPE_OPTIONS } from '@/shared/types/bridge';
 import { cn } from '@/lib/utils';
-import { Bluetooth, Cable, Loader2, Sun, Moon, Monitor } from 'lucide-react';
+import { Bluetooth, Cable, Loader2, Sun, Moon, Monitor, Languages } from 'lucide-react';
 
-/** 连接状态指示器 */
+const STATUS_I18N_KEYS: Record<ConnectionStatus, string> = {
+  disconnected: 'connection.statusDisconnected',
+  connecting: 'connection.statusConnecting',
+  connected: 'connection.statusConnected',
+  error: 'connection.statusError',
+};
+
 function StatusIndicator({ status }: { status: ConnectionStatus }) {
+  const { t } = useTranslation();
   const colorMap: Record<ConnectionStatus, string> = {
     disconnected: 'bg-muted-foreground/40',
     connecting: 'bg-warning animate-pulse',
@@ -15,23 +23,16 @@ function StatusIndicator({ status }: { status: ConnectionStatus }) {
     error: 'bg-destructive',
   };
 
-  const textMap: Record<ConnectionStatus, string> = {
-    disconnected: '未连接',
-    connecting: '连接中...',
-    connected: '已连接',
-    error: '连接错误',
-  };
-
   return (
     <span className="inline-flex items-center gap-1.5 text-xs font-medium shrink-0">
       <span className={cn('w-2 h-2 rounded-full transition-colors', colorMap[status])} />
-      <span className="text-muted-foreground">{textMap[status]}</span>
+      <span className="text-muted-foreground">{t(STATUS_I18N_KEYS[status])}</span>
     </span>
   );
 }
 
-/** 主题切换按钮 */
 function ThemeToggle() {
+  const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
 
   const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>('dark');
@@ -57,12 +58,11 @@ function ThemeToggle() {
     if (theme === 'system') next = 'light';
     else if (theme === 'light') next = 'dark';
     else next = 'system';
-    console.log('[AIBMS Theme] toggle:', theme, '→', next);
     setTheme(next);
   }, [theme, setTheme]);
 
   const Icon = theme === 'system' ? Monitor : resolvedTheme === 'dark' ? Moon : Sun;
-  const title = theme === 'system' ? '跟随系统' : resolvedTheme === 'dark' ? '深色模式' : '浅色模式';
+  const title = theme === 'system' ? t('theme.followSystem') : resolvedTheme === 'dark' ? t('theme.darkMode') : t('theme.lightMode');
 
   return (
     <button
@@ -78,8 +78,34 @@ function ThemeToggle() {
   );
 }
 
-/** 连接控制栏 - 容器顶部 UI */
+function LanguageToggle() {
+  const { i18n } = useTranslation();
+  const nextLng = i18n.language === 'zh' ? 'en' : 'zh';
+  const label = i18n.language === 'zh' ? 'EN' : '中';
+
+  const toggle = useCallback(() => {
+    i18n.changeLanguage(nextLng);
+    document.documentElement.lang = nextLng === 'zh' ? 'zh-CN' : 'en';
+    window.dispatchEvent(new CustomEvent('aibms:locale-change', { detail: { locale: nextLng } }));
+  }, [i18n, nextLng]);
+
+  return (
+    <button
+      onClick={toggle}
+      className={cn(
+        "h-8 w-8 flex items-center justify-center rounded border border-border",
+        "hover:bg-accent hover:text-accent-foreground transition-colors shrink-0"
+      )}
+      title={nextLng === 'zh' ? '中文' : 'English'}
+    >
+      <Languages className="w-4 h-4" />
+      <span className="text-[9px] font-bold absolute">{label}</span>
+    </button>
+  );
+}
+
 export function ConnectionBar() {
+  const { t } = useTranslation();
   const [connType, setConnType] = useState<ConnectionType>('bluetooth');
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const [btConfig, setBtConfig] = useState<BluetoothConfig>({
@@ -95,7 +121,6 @@ export function ConnectionBar() {
     parity: 'none',
   });
 
-  // 监听连接状态变化
   useEffect(() => {
     const unsubscribe = webBridge.onConnectionStatusChange((newStatus) => {
       setStatus(newStatus);
@@ -132,11 +157,20 @@ export function ConnectionBar() {
   const isConnected = status === 'connected';
   const isConnecting = status === 'connecting';
 
+  const CONN_TYPE_I18N: Record<string, string> = {
+    bluetooth: 'connection.typeBluetooth',
+    serial: 'connection.typeSerial',
+  };
+
+  const PARITY_I18N: Record<string, string> = {
+    none: 'connection.parityNone',
+    odd: 'connection.parityOdd',
+    even: 'connection.parityEven',
+  };
+
   return (
     <header className="relative z-50 bg-card border-b border-border shadow-sm">
-      {/* 主栏 - 所有元素在同一行 */}
       <div className="h-12 px-4 flex items-center gap-3">
-        {/* Logo */}
         <div className="flex items-center shrink-0">
           <img
             src="/aibms-logo.png"
@@ -145,10 +179,8 @@ export function ConnectionBar() {
           />
         </div>
 
-        {/* 分隔线 */}
         <div className="w-px h-6 bg-border shrink-0" />
 
-        {/* 连接方式下拉 */}
         <div className="relative shrink-0">
           <select
             value={connType}
@@ -162,7 +194,7 @@ export function ConnectionBar() {
              )}
           >
             {CONNECTION_TYPE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <option key={opt.value} value={opt.value}>{t(CONN_TYPE_I18N[opt.value])}</option>
             ))}
           </select>
           {connType === 'bluetooth' ? (
@@ -172,10 +204,9 @@ export function ConnectionBar() {
           )}
         </div>
 
-        {/* 连接设置 - 紧跟下拉框后面，同一行显示 */}
         {connType === 'bluetooth' ? (
           <div className="flex items-center gap-2 animate-fade-in shrink-0">
-            <label className="text-xs text-muted-foreground whitespace-nowrap">过滤:</label>
+            <label className="text-xs text-muted-foreground whitespace-nowrap">{t('connection.filterLabel')}</label>
             <input
               type="text"
               value={btConfig.nameFilter}
@@ -187,7 +218,7 @@ export function ConnectionBar() {
           </div>
         ) : (
           <div className="flex items-center gap-2 animate-fade-in shrink-0">
-            <label className="text-xs text-muted-foreground whitespace-nowrap">波特率:</label>
+            <label className="text-xs text-muted-foreground whitespace-nowrap">{t('connection.baudRateLabel')}</label>
             <select
               value={serialConfig.baudRate}
               onChange={(e) => setSerialConfig((prev) => ({ ...prev, baudRate: Number(e.target.value) }))}
@@ -199,7 +230,7 @@ export function ConnectionBar() {
                 <option key={rate} value={rate}>{rate}</option>
               ))}
             </select>
-            <label className="text-xs text-muted-foreground whitespace-nowrap">校验:</label>
+            <label className="text-xs text-muted-foreground whitespace-nowrap">{t('connection.parityLabel')}</label>
             <select
               value={serialConfig.parity}
               onChange={(e) => setSerialConfig((prev) => ({ ...prev, parity: e.target.value as SerialConfig['parity'] }))}
@@ -208,13 +239,12 @@ export function ConnectionBar() {
                          cursor-pointer transition-all"
             >
               {PARITY_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                <option key={opt.value} value={opt.value}>{t(PARITY_I18N[opt.value])}</option>
               ))}
             </select>
           </div>
         )}
 
-        {/* 连接/断开按钮 */}
         <button
           onClick={handleConnect}
           disabled={isConnecting}
@@ -230,14 +260,14 @@ export function ConnectionBar() {
           {isConnecting ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
           ) : isConnected ? (
-            <span>断开</span>
+            <span>{t('connection.disconnect')}</span>
           ) : (
-            <span>连接</span>
+            <span>{t('connection.connect')}</span>
           )}
         </button>
 
-        {/* 右侧空白填充 + 主题切换 */}
         <div className="flex-1" />
+        <LanguageToggle />
         <ThemeToggle />
       </div>
     </header>
