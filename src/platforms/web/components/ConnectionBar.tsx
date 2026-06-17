@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { webBridge } from '@/platforms/web/lib/web-bridge';
 import { useTheme, type Theme } from '@/components/theme-provider';
@@ -6,6 +6,21 @@ import type { ConnectionType, ConnectionStatus, BluetoothConfig, SerialConfig } 
 import { BAUD_RATE_OPTIONS, PARITY_OPTIONS, CONNECTION_TYPE_OPTIONS } from '@/shared/types/bridge';
 import { cn } from '@/lib/utils';
 import { Bluetooth, Cable, Loader2, Sun, Moon, Monitor, Languages } from 'lucide-react';
+
+function useAutoWidthSelect(value: string) {
+  const ref = useRef<HTMLSelectElement>(null);
+  const measureRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (ref.current && measureRef.current) {
+      measureRef.current.textContent = ref.current.options[ref.current.selectedIndex]?.text || '';
+      const w = measureRef.current.offsetWidth;
+      ref.current.style.width = `${w + 28}px`;
+    }
+  }, [value]);
+
+  return { ref, measureRef };
+}
 
 const STATUS_I18N_KEYS: Record<ConnectionStatus, string> = {
   disconnected: 'connection.statusDisconnected',
@@ -86,6 +101,17 @@ function LanguageToggle() {
     { code: 'en', label: 'English' },
   ];
 
+  const current = LANGUAGES.find((l) => i18n.language.startsWith(l.code)) || LANGUAGES[0];
+  const autoWidth = useAutoWidthSelect(current.code);
+
+  useEffect(() => {
+    if (autoWidth.ref.current && autoWidth.measureRef.current) {
+      autoWidth.measureRef.current.textContent = current.label;
+      const w = autoWidth.measureRef.current.offsetWidth;
+      autoWidth.ref.current.style.width = `${w + 28}px`;
+    }
+  }, [current.code]);
+
   const handleChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const lng = e.target.value;
     i18n.changeLanguage(lng);
@@ -93,12 +119,12 @@ function LanguageToggle() {
     window.dispatchEvent(new CustomEvent('aibms:locale-change', { detail: { locale: lng } }));
   }, [i18n]);
 
-  const current = LANGUAGES.find((l) => i18n.language.startsWith(l.code)) || LANGUAGES[0];
-
   return (
     <div className="relative shrink-0">
       <Languages className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-primary pointer-events-none" />
+      <span ref={autoWidth.measureRef} className="absolute invisible text-xs font-medium whitespace-nowrap" aria-hidden />
       <select
+        ref={autoWidth.ref}
         value={current.code}
         onChange={handleChange}
         className={cn(
@@ -130,6 +156,10 @@ export function ConnectionBar() {
     stopBits: 1,
     parity: 'none',
   });
+
+  const connTypeSelect = useAutoWidthSelect(connType);
+  const baudRateSelect = useAutoWidthSelect(String(serialConfig.baudRate));
+  const paritySelect = useAutoWidthSelect(serialConfig.parity);
 
   useEffect(() => {
     const unsubscribe = webBridge.onConnectionStatusChange((newStatus) => {
@@ -192,7 +222,9 @@ export function ConnectionBar() {
         <div className="w-px h-6 bg-border shrink-0" />
 
         <div className="relative">
+          <span ref={connTypeSelect.measureRef} className="absolute invisible text-xs font-medium whitespace-nowrap" aria-hidden />
           <select
+            ref={connTypeSelect.ref}
             value={connType}
             onChange={(e) => handleConnTypeChange(e.target.value as ConnectionType)}
             disabled={isConnected || isConnecting}
@@ -229,7 +261,9 @@ export function ConnectionBar() {
         ) : (
           <div className="flex items-center gap-2 animate-fade-in">
             <label className="text-xs text-muted-foreground whitespace-nowrap">{t('connection.baudRateLabel')}</label>
+            <span ref={baudRateSelect.measureRef} className="absolute invisible text-xs font-mono whitespace-nowrap" aria-hidden />
             <select
+              ref={baudRateSelect.ref}
               value={serialConfig.baudRate}
               onChange={(e) => setSerialConfig((prev) => ({ ...prev, baudRate: Number(e.target.value) }))}
               className="h-8 px-2 text-xs rounded border border-border bg-background 
@@ -241,7 +275,9 @@ export function ConnectionBar() {
               ))}
             </select>
             <label className="text-xs text-muted-foreground whitespace-nowrap">{t('connection.parityLabel')}</label>
+            <span ref={paritySelect.measureRef} className="absolute invisible text-xs whitespace-nowrap" aria-hidden />
             <select
+              ref={paritySelect.ref}
               value={serialConfig.parity}
               onChange={(e) => setSerialConfig((prev) => ({ ...prev, parity: e.target.value as SerialConfig['parity'] }))}
               className="h-8 px-2 text-xs rounded border border-border bg-background 
