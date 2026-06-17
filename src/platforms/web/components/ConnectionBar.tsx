@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { webBridge } from '@/platforms/web/lib/web-bridge';
 import { useTheme, type Theme } from '@/components/theme-provider';
@@ -11,13 +11,16 @@ function useAutoWidthSelect(value: string, extraWidth = 28) {
   const ref = useRef<HTMLSelectElement>(null);
   const measureRef = useRef<HTMLSpanElement>(null);
 
-  useEffect(() => {
+  const update = () => {
     if (ref.current && measureRef.current) {
       measureRef.current.textContent = ref.current.options[ref.current.selectedIndex]?.text || '';
       const w = measureRef.current.offsetWidth;
       ref.current.style.width = `${w + extraWidth}px`;
     }
-  }, [value, extraWidth]);
+  };
+
+  useLayoutEffect(update, [value, extraWidth]);
+  useEffect(update, [value, extraWidth]);
 
   return { ref, measureRef };
 }
@@ -104,14 +107,6 @@ function LanguageToggle() {
   const current = LANGUAGES.find((l) => i18n.language.startsWith(l.code)) || LANGUAGES[0];
   const autoWidth = useAutoWidthSelect(current.code, 56);
 
-  useEffect(() => {
-    if (autoWidth.ref.current && autoWidth.measureRef.current) {
-      autoWidth.measureRef.current.textContent = current.label;
-      const w = autoWidth.measureRef.current.offsetWidth;
-      autoWidth.ref.current.style.width = `${w + 56}px`;
-    }
-  }, [current.code]);
-
   const handleChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const lng = e.target.value;
     i18n.changeLanguage(lng);
@@ -157,9 +152,12 @@ export function ConnectionBar() {
     parity: 'none',
   });
 
-  const connTypeSelect = useAutoWidthSelect(connType, 56);
+  const connTypeLabel = t(CONN_TYPE_I18N[connType]);
+  const parityLabel = t(PARITY_I18N[serialConfig.parity]);
+
+  const connTypeSelect = useAutoWidthSelect(connTypeLabel, 56);
   const baudRateSelect = useAutoWidthSelect(String(serialConfig.baudRate));
-  const paritySelect = useAutoWidthSelect(serialConfig.parity);
+  const paritySelect = useAutoWidthSelect(parityLabel);
 
   useEffect(() => {
     const unsubscribe = webBridge.onConnectionStatusChange((newStatus) => {
