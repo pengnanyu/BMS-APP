@@ -1,6 +1,6 @@
 /*
   X-Frame-Options: SAMEORIGIN
-  Content-Security-Policy: frame-src https://ui.aibms.net https://*.aibms.net; default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline';
+  Content-Security-Policy: default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://static.cloudflareinsights.com; frame-src https://ui.aibms.net https://*.aibms.net; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://static.cloudflareinsights.com;
   Permissions-Policy: bluetooth=*, serial=*
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Embedder-Policy: credentialless

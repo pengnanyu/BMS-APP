@@ -43,7 +43,7 @@
   深色主题通过 html.dark 覆盖，使用 !important 确保优先级
 */
 
-@theme inline {
+@theme {
   /* 浅色主题颜色（默认） */
   --color-background: oklch(1.0000 0 0);
   --color-foreground: oklch(0.2686 0 0);
