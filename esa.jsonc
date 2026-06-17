@@ -1,6 +1,8 @@
 {
-  "assets": "dist",
-  "build": {
-    "command": "npm run build"
+  "name": "bms-app",
+  "description": "AIBMS 智能电池管理上位机系统",
+  "assets": {
+    "directory": "./dist",
+    "notFoundStrategy": "singlePageApplication"
   }
 }
