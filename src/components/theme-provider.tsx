@@ -18,7 +18,7 @@ const initialState: ThemeProviderState = {
   setTheme: () => null,
 };
 
-const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
+const ThemeProviderContext = createContext<ThemeProviderState | undefined>(undefined);
 
 function applyTheme(theme: Theme) {
   const root = window.document.documentElement;
@@ -80,3 +80,8 @@ export const useTheme = () => {
   }
   return context;
 };
+
+// 提供一个安全的 useTheme，供非 React 上下文使用（如 sonner）
+export function getThemeFromDOM(): 'dark' | 'light' {
+  return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+}
