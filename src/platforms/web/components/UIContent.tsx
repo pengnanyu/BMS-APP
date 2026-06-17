@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { webBridge } from '@/platforms/web/lib/web-bridge';
 import type { ConnectionStatus } from '@/shared/types/bridge';
 import { cn } from '@/lib/utils';
@@ -32,10 +32,11 @@ export function UIContent() {
         <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]"
           style={{
             backgroundImage: `
-              linear-gradient(hsl(var(--foreground)) 1px, transparent 1px),
-              linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)
+              linear-gradient(currentColor 1px, transparent 1px),
+              linear-gradient(90deg, currentColor 1px, transparent 1px)
             `,
             backgroundSize: '40px 40px',
+            color: 'var(--color-foreground)',
           }}
         />
 

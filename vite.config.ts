@@ -1,11 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import tailwindcss from "@tailwindcss/vite";
-import { fileURLToPath, URL } from "node:url";
-import fs from "fs";
-
-const __dirname = fileURLToPath(new URL(".", import.meta.url));
-const hasEsaConfig = fs.existsSync(new URL("esa.jsonc", import.meta.url));
+import { fileURLToPath } from "node:url";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -15,16 +11,6 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
-    ...(hasEsaConfig
-      ? {
-          proxy: {
-            "/api": {
-              target: "http://127.0.0.1:18080",
-              changeOrigin: true,
-            },
-          },
-        }
-      : {}),
   },
   plugins: [tailwindcss(), react()],
   resolve: {

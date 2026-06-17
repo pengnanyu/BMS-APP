@@ -1,16 +1,10 @@
-# Cloudflare Pages 配置文件
-# https://developers.cloudflare.com/pages/configuration/
+#:schema node_modules/wrangler/config-schema.json
+
+name = "bms-app"
+compatibility_date = "2024-09-23"
+
+[site]
+bucket = "./dist"
 
 [build]
-  command = "bun run build"
-  publish = "dist"
-
-[[env.production]]
-  [build]
-    command = "bun run build"
-    publish = "dist"
-
-[[env.preview]]
-  [build]
-    command = "bun run build"
-    publish = "dist"
+command = "bun run build"
