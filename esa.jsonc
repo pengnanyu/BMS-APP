@@ -1,0 +1,6 @@
+{
+  "assets": "dist",
+  "build": {
+    "command": "npm run build"
+  }
+}

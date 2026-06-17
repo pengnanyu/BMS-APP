@@ -1,6 +1,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import tailwindcss from "@tailwindcss/vite";
+import vesaErrorReporter from "./.vesa/vite-error-plugin.js";
+import vesaDesignMode from "./.vesa/vite-design-mode-plugin.js";
 import { fileURLToPath } from "node:url";
 
 // https://vitejs.dev/config/
@@ -12,7 +14,7 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [tailwindcss(), react()],
+  plugins: [vesaErrorReporter(), vesaDesignMode(), tailwindcss(), react()],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
@@ -24,7 +26,6 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ["react", "react-dom"],
           ui: ["@radix-ui/react-select", "@radix-ui/react-dialog", "sonner"],
         },
       },
