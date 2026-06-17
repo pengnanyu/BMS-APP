@@ -1,0 +1,16 @@
+# Cloudflare Pages 配置文件
+# https://developers.cloudflare.com/pages/configuration/
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[env.production]]
+  [build]
+    command = "npm run build"
+    publish = "dist"
+
+[[env.preview]]
+  [build]
+    command = "npm run build"
+    publish = "dist"

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
-export type Theme = 'dark' | 'light' | 'system';
+type Theme = 'dark' | 'light' | 'system';
 
 interface ThemeProviderProps {
   children: React.ReactNode;
@@ -13,6 +13,7 @@ interface ThemeProviderState {
   setTheme: (theme: Theme) => void;
 }
 
+// 不传初始值，让 context 为 undefined，useTheme 才能正确检测是否在 Provider 内
 const ThemeProviderContext = createContext<ThemeProviderState | undefined>(undefined);
 
 function applyTheme(theme: Theme) {
@@ -75,8 +76,3 @@ export const useTheme = () => {
   }
   return context;
 };
-
-// 提供一个安全的 useTheme，供非 React 上下文使用（如 sonner）
-export function getThemeFromDOM(): 'dark' | 'light' {
-  return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-}
