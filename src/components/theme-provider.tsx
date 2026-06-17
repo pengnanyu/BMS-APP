@@ -33,7 +33,6 @@ export function ThemeProvider({
   children,
   defaultTheme = 'system',
   storageKey = 'aibms-theme',
-  ...props
 }: ThemeProviderProps) {
   const [theme, setThemeState] = useState<Theme>(
     () => (localStorage.getItem(storageKey) as Theme) || defaultTheme,
@@ -58,7 +57,7 @@ export function ThemeProvider({
   const value = { theme, setTheme };
 
   return (
-    <ThemeProviderContext.Provider {...props} value={value}>
+    <ThemeProviderContext.Provider value={value}>
       {children}
     </ThemeProviderContext.Provider>
   );

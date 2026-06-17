@@ -7,24 +7,24 @@ import { BAUD_RATE_OPTIONS, PARITY_OPTIONS, CONNECTION_TYPE_OPTIONS } from '@/sh
 import { cn } from '@/lib/utils';
 import { Bluetooth, Cable, Loader2, Sun, Moon, Monitor, Languages } from 'lucide-react';
 
+let _canvasCtx: CanvasRenderingContext2D | null = null;
+
 function useAutoWidthSelect(value: string, extraWidth = 34) {
   const ref = useRef<HTMLSelectElement>(null);
 
-  const update = () => {
+  useLayoutEffect(() => {
     const sel = ref.current;
     if (!sel) return;
     const text = sel.options[sel.selectedIndex]?.text || '';
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!_canvasCtx) {
+      const c = document.createElement('canvas');
+      _canvasCtx = c.getContext('2d');
+    }
+    if (!_canvasCtx) return;
     const style = getComputedStyle(sel);
-    ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-    const textWidth = ctx.measureText(text).width;
-    sel.style.width = `${Math.ceil(textWidth) + extraWidth}px`;
-  };
-
-  useLayoutEffect(update, [value, extraWidth]);
-  useEffect(update, [value, extraWidth]);
+    _canvasCtx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    sel.style.width = `${Math.ceil(_canvasCtx.measureText(text).width) + extraWidth}px`;
+  }, [value, extraWidth]);
 
   return { ref };
 }
@@ -189,12 +189,8 @@ export function ConnectionBar() {
 
     if (status === 'connected') {
       await webBridge.disconnect();
-      setStatus('disconnected');
     } else {
-      const success = await webBridge.connect();
-      if (!success) {
-        setStatus('disconnected');
-      }
+      await webBridge.connect();
     }
   }, [connType, status, btConfig, serialConfig]);
 

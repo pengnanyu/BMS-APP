@@ -6,7 +6,6 @@ import type {
   ConnectionStatusCallback,
   DataReceiveCallback,
   PlatformInfo,
-  SerialConfig,
   WebBridgeAPI,
 } from '@/shared/types/bridge';
 import {

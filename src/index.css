@@ -3,35 +3,10 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* 本地字体声明 - 替代 Google Fonts CDN */
 @font-face {
   font-family: 'JetBrains Mono';
   font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('/fonts/JetBrainsMono-latin.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'JetBrains Mono';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url('/fonts/JetBrainsMono-latin.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'JetBrains Mono';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('/fonts/JetBrainsMono-latin.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'JetBrains Mono';
-  font-style: normal;
-  font-weight: 700;
+  font-weight: 100 900;
   font-display: swap;
   src: url('/fonts/JetBrainsMono-latin.woff2') format('woff2');
 }
