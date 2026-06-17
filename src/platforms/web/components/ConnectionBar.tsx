@@ -181,7 +181,7 @@ export function ConnectionBar() {
 
         <div className="w-px h-6 bg-border shrink-0" />
 
-        <div className="relative shrink-0">
+        <div className="relative">
           <select
             value={connType}
             onChange={(e) => handleConnTypeChange(e.target.value as ConnectionType)}
@@ -205,7 +205,7 @@ export function ConnectionBar() {
         </div>
 
         {connType === 'bluetooth' ? (
-          <div className="flex items-center gap-2 animate-fade-in shrink-0">
+          <div className="flex items-center gap-2 animate-fade-in">
             <label className="text-xs text-muted-foreground whitespace-nowrap">{t('connection.filterLabel')}</label>
             <input
               type="text"
@@ -217,7 +217,7 @@ export function ConnectionBar() {
             />
           </div>
         ) : (
-          <div className="flex items-center gap-2 animate-fade-in shrink-0">
+          <div className="flex items-center gap-2 animate-fade-in">
             <label className="text-xs text-muted-foreground whitespace-nowrap">{t('connection.baudRateLabel')}</label>
             <select
               value={serialConfig.baudRate}
