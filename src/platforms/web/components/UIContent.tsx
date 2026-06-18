@@ -143,7 +143,7 @@ export function UIContent() {
   }, [connStatus, theme, sendMessageToIframe]);
 
   return (
-    <div className="absolute inset-0 bg-background">
+    <div className="absolute inset-0 top-12 bg-background">
       {/* 加载指示器 */}
       {loading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-background">
