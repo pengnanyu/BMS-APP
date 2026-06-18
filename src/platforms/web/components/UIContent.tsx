@@ -1,31 +1,13 @@
-import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { webBridge } from '@/platforms/web/lib/web-bridge';
-import type { ConnectionStatus } from '@/shared/types/bridge';
 import { cn } from '@/lib/utils';
-import { WifiOff, Battery, Zap, Thermometer, Gauge } from 'lucide-react';
+import { Battery, Zap, Thermometer, Gauge } from 'lucide-react';
 
 export function UIContent() {
   const { t } = useTranslation();
-  const [connStatus, setConnStatus] = useState<ConnectionStatus>('disconnected');
-
-  useEffect(() => {
-    const unsubscribe = webBridge.onConnectionStatusChange((status) => {
-      setConnStatus(status);
-    });
-    return unsubscribe;
-  }, []);
 
   return (
-    <div className="relative flex-1 overflow-hidden bg-background">
-      {connStatus === 'error' && (
-        <div className="absolute top-0 left-0 right-0 z-20 bg-destructive/10 border-b border-destructive/20 px-4 py-1.5 flex items-center gap-2 animate-slide-down">
-          <WifiOff className="w-3.5 h-3.5 text-destructive shrink-0" />
-          <span className="text-xs text-destructive font-medium">{t('connection.errorBanner')}</span>
-        </div>
-      )}
-
-      <div className="h-full flex flex-col items-center justify-center p-8 animate-fade-in">
+    <div className="relative flex-1 overflow-y-auto bg-background">
+      <div className="min-h-full flex flex-col items-center justify-center p-8 animate-fade-in">
         <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]"
           style={{
             backgroundImage: `

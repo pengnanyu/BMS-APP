@@ -206,7 +206,7 @@ export function ConnectionBar() {
   const isConnecting = status === 'connecting';
 
   return (
-    <header className="relative z-50 bg-card border-b border-border shadow-sm">
+    <header className="sticky top-0 z-50 bg-card/70 backdrop-blur-xl border-b border-border shadow-sm">
       <div className="h-12 px-4 flex items-center gap-3">
         <div className="flex items-center shrink-0">
           <img
