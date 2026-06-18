@@ -3,6 +3,9 @@
     "title": "AIBMS - 智能电池管理系统",
     "metaDescription": "AIBMS 智能电池管理上位机系统"
   },
+  "common": {
+    "loading": "加载中..."
+  },
   "connection": {
     "statusDisconnected": "未连接",
     "statusConnecting": "连接中...",
@@ -24,17 +27,6 @@
     "followSystem": "跟随系统",
     "darkMode": "深色模式",
     "lightMode": "浅色模式"
-  },
-  "dashboard": {
-    "title": "BMS 数据面板",
-    "subtitle": "连接设备后，UI 界面将在此处加载显示",
-    "batteryStatus": "电池状态",
-    "waitingForConnection": "等待连接",
-    "voltageCurrent": "电压 / 电流",
-    "temperature": "温度",
-    "soc": "SOC",
-    "tipLabel": "提示：",
-    "tipMessage": "外部 UI 服务（ui.aibms.net）开发完成后，此占位区域将替换为 iframe 加载真实 UI。当前可通过顶部控制栏测试蓝牙/串口连接功能。"
   },
   "bridge": {
     "alreadyConnected": "已连接或正在连接中",
