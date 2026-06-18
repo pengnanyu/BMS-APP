@@ -4,11 +4,11 @@ import { UIContent } from '@/platforms/web/components/UIContent';
 /** Web 容器主页面 */
 export function WebContainer() {
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden">
-      {/* 顶部连接控制栏 */}
+    <div className="h-screen bg-background">
+      {/* 顶部连接控制栏 - 固定定位 */}
       <ConnectionBar />
 
-      {/* UI 内容区（占位，后续替换为 iframe 加载 ui.aibms.net） */}
+      {/* UI 内容区 - 独立滚动 */}
       <UIContent />
     </div>
   );
