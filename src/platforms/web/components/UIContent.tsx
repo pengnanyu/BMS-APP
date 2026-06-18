@@ -6,8 +6,8 @@ export function UIContent() {
   const { t } = useTranslation();
 
   return (
-    <div className="relative bg-background">
-      <div className="min-h-full flex flex-col items-center justify-center p-8 pt-16 animate-fade-in">
+    <div className="absolute inset-0 overflow-y-auto bg-background">
+      <div className="min-h-full flex flex-col items-center justify-center p-8 pt-14 animate-fade-in">
         <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]"
           style={{
             backgroundImage: `
