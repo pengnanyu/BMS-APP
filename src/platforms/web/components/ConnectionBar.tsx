@@ -208,7 +208,7 @@ export function ConnectionBar() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border shadow-sm" style={{ backgroundColor: 'color-mix(in oklch, var(--color-card) 75%, transparent)', backdropFilter: 'blur(24px) saturate(1.2)', WebkitBackdropFilter: 'blur(24px) saturate(1.2)' }}>
       <div className="h-12 px-4 flex items-center gap-3">
-        <div className="flex items-center shrink-0">
+        <div className="flex items-center shrink-0 hidden sm:flex">
           <img
             src="/aibms-logo.png"
             alt="AIBMS"
@@ -216,7 +216,7 @@ export function ConnectionBar() {
           />
         </div>
 
-        <div className="w-px h-6 bg-border shrink-0" />
+        <div className="w-px h-6 bg-border shrink-0 hidden sm:block" />
 
         <div className="relative">
            <select
