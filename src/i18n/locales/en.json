@@ -4,7 +4,9 @@
     "metaDescription": "AIBMS Smart Battery Management Host System"
   },
   "common": {
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "enterFullscreen": "Fullscreen",
+    "exitFullscreen": "Exit Fullscreen"
   },
   "connection": {
     "statusDisconnected": "Disconnected",

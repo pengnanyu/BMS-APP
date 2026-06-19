@@ -4,7 +4,9 @@
     "metaDescription": "AIBMS 智能电池管理上位机系统"
   },
   "common": {
-    "loading": "加载中..."
+    "loading": "加载中...",
+    "enterFullscreen": "全屏模式",
+    "exitFullscreen": "退出全屏"
   },
   "connection": {
     "statusDisconnected": "未连接",
