@@ -90,8 +90,9 @@ function ThemeToggle() {
     <button
       onClick={toggleTheme}
       className={cn(
-        "h-8 w-8 flex items-center justify-center rounded border border-border",
-        "hover:bg-accent hover:text-accent-foreground transition-colors shrink-0"
+        "h-10 w-10 flex items-center justify-center rounded border border-border",
+        "hover:bg-accent hover:text-accent-foreground transition-colors shrink-0",
+        "touch-manipulation"
       )}
       title={title}
     >
