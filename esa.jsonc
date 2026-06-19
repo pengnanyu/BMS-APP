@@ -1,6 +1,6 @@
 {
   "name": "bms-app",
-  "description": "AIBMS 智能电池管理上位机系统",
+  "description": "AIBMS Smart Battery Management System",
   "assets": {
     "directory": "./dist",
     "notFoundStrategy": "singlePageApplication"
