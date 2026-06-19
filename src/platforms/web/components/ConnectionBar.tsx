@@ -5,7 +5,7 @@ import { useTheme, type Theme } from '@/components/theme-provider';
 import type { ConnectionType, ConnectionStatus, BluetoothConfig, SerialConfig } from '@/shared/types/bridge';
 import { BAUD_RATE_OPTIONS, PARITY_OPTIONS, CONNECTION_TYPE_OPTIONS } from '@/shared/types/bridge';
 import { cn } from '@/lib/utils';
-import { Bluetooth, Cable, Loader2, Sun, Moon, Monitor, Languages, Maximize, Minimize } from 'lucide-react';
+import { Bluetooth, Cable, Loader2, Sun, Moon, Monitor, Languages } from 'lucide-react';
 
 let _canvasCtx: CanvasRenderingContext2D | null = null;
 
@@ -89,44 +89,6 @@ function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className={cn(
-        "h-10 w-10 flex items-center justify-center rounded border border-border",
-        "hover:bg-accent hover:text-accent-foreground transition-colors shrink-0",
-        "touch-manipulation"
-      )}
-      title={title}
-    >
-      <Icon className="w-4 h-4" />
-    </button>
-  );
-}
-
-function FullscreenToggle() {
-  const { t } = useTranslation();
-  const [isFullscreen, setIsFullscreen] = useState(false);
-
-  useEffect(() => {
-    const handleChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', handleChange);
-    return () => document.removeEventListener('fullscreenchange', handleChange);
-  }, []);
-
-  const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-    } else {
-      document.exitFullscreen().catch(() => {});
-    }
-  }, []);
-
-  const Icon = isFullscreen ? Minimize : Maximize;
-  const title = isFullscreen ? t('common.exitFullscreen') : t('common.enterFullscreen');
-
-  return (
-    <button
-      onClick={toggleFullscreen}
       className={cn(
         "h-10 w-10 flex items-center justify-center rounded border border-border",
         "hover:bg-accent hover:text-accent-foreground transition-colors shrink-0",
@@ -245,7 +207,7 @@ export function ConnectionBar() {
   const isConnecting = status === 'connecting';
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 shadow-sm" style={{ backgroundColor: 'color-mix(in oklch, var(--color-card) 65%, transparent)' }}>
+    <header className="sticky top-0 z-50 border-b border-border/50 shadow-sm" style={{ backgroundColor: 'color-mix(in oklch, var(--color-card) 65%, transparent)' }}>
       <div className="h-12 px-4 flex items-center gap-3">
         <div className="flex items-center shrink-0 hidden sm:flex">
           <img
@@ -348,7 +310,6 @@ export function ConnectionBar() {
         <div className="flex-1" />
         <LanguageToggle />
         <ThemeToggle />
-        <FullscreenToggle />
       </div>
     </header>
   );
