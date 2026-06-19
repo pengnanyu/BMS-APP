@@ -159,6 +159,7 @@ export function UIContent() {
         ref={iframeRef}
         src={UI_URL}
         onLoad={handleIframeLoad}
+        allowTransparency
         className={cn(
           "w-full h-full border-0",
           loading && "invisible"
