@@ -23,7 +23,7 @@ export function WebContainer() {
 
   return (
     <div
-      className="relative h-screen overflow-hidden"
+      className="fixed inset-0 overflow-hidden"
       style={{ background: isDark ? darkBg : lightBg }}
     >
       <ConnectionBar />

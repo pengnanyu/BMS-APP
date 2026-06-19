@@ -67,6 +67,12 @@ export function UIContent() {
       const data = event.data;
       if (!data || typeof data !== 'object' || !data.type) return;
 
+      /* iframe 内滚动时，在顶层触发 scrollTo 隐藏移动端浏览器地址栏 */
+      if (data.type === 'bms:iframe-scroll') {
+        try { window.scrollTo(0, 1); } catch {}
+        return;
+      }
+
       handleIframeMessage(data);
     };
     window.addEventListener('message', handleMessage);
