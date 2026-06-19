@@ -143,10 +143,10 @@ export function UIContent() {
   }, [connStatus, theme, sendMessageToIframe]);
 
   return (
-    <div className="absolute inset-0 top-12 bg-background">
+    <div className="absolute inset-0 top-12">
       {/* 加载指示器 */}
       {loading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background">
+        <div className="absolute inset-0 z-10 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="w-6 h-6 text-primary animate-spin" />
             <span className="text-xs text-muted-foreground">{t('common.loading')}</span>
