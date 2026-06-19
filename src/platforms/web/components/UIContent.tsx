@@ -67,12 +67,6 @@ export function UIContent() {
       const data = event.data;
       if (!data || typeof data !== 'object' || !data.type) return;
 
-      /* iframe 内滚动时，在顶层触发 scrollTo 隐藏移动端浏览器地址栏 */
-      if (data.type === 'bms:iframe-scroll') {
-        try { window.scrollTo(0, 1); } catch {}
-        return;
-      }
-
       handleIframeMessage(data);
     };
     window.addEventListener('message', handleMessage);
@@ -149,7 +143,7 @@ export function UIContent() {
   }, [connStatus, theme, sendMessageToIframe]);
 
   return (
-    <div className="absolute left-0 right-0 top-12 bottom-0">
+    <div className="absolute inset-0 top-12">
       {/* 加载指示器 */}
       {loading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center">
