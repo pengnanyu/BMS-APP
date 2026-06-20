@@ -124,6 +124,14 @@ export class DataQueue {
     }
   }
 
+  /** 确认最早的 pending 项（收到响应帧时调用，避免超时重发） */
+  ackOldestPending(): void {
+    const idx = this._sendQueue.findIndex((i) => i.pending);
+    if (idx !== -1) {
+      this._sendQueue.splice(idx, 1);
+    }
+  }
+
   /** 启动队列处理（超时检测） */
   start(): void {
     if (this._timer) return;

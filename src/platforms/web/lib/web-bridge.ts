@@ -483,6 +483,9 @@ class WebBridgeManager implements WebBridgeAPI {
 
     /* 推送提取到的完整帧 */
     if (frames.length > 0) {
+      /* 收到响应帧，确认队列中最早的 pending 项（避免超时重发） */
+      this._queue.ackOldestPending();
+
       /* 检测初始化帧响应：地址码 0x00，任意有效功能码（非异常响应）均视为有效响应 */
       if (!this._initSent) {
         for (const frame of frames) {
