@@ -4,6 +4,9 @@ import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
+import { readFileSync } from "node:fs";
+
+const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf-8"));
 
 const vesaPlugins = fs.existsSync(new URL("./.vesa", import.meta.url))
   ? [
@@ -13,6 +16,9 @@ const vesaPlugins = fs.existsSync(new URL("./.vesa", import.meta.url))
   : [];
 
 export default defineConfig(({ mode }) => ({
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   server: {
     host: "::",
     port: 5173,
