@@ -483,10 +483,10 @@ class WebBridgeManager implements WebBridgeAPI {
 
     /* 推送提取到的完整帧 */
     if (frames.length > 0) {
-      /* 检测初始化帧响应：地址码 0x00，功能码 0x03 */
+      /* 检测初始化帧响应：地址码 0x00，功能码 0x03/0x11/0x30 均视为有效响应 */
       if (!this._initSent) {
         for (const frame of frames) {
-          if (frame.length >= 2 && frame[0] === 0x00 && frame[1] === 0x03) {
+          if (frame.length >= 2 && frame[0] === 0x00 && (frame[1] === 0x03 || frame[1] === 0x11 || frame[1] === 0x30)) {
             this._initSent = true;
             if (this._initTimer) {
               clearTimeout(this._initTimer);
