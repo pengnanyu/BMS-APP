@@ -15,11 +15,24 @@ export function UIContent() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [loading, setLoading] = useState(true);
   const [connStatus, setConnStatus] = useState<ConnectionStatus>('disconnected');
+  /* 保存初始化帧响应，iframe 加载完成后重新推送 */
+  const initFrameRef = useRef<{ success: boolean; frame: number[] | null } | null>(null);
+  /* 保存最新的 handleIframeMessage，避免 useEffect 闭包捕获旧值 */
+  const handleMessageRef = useRef<(msg: { type: string; payload: unknown }) => void>(() => {});
+
+  /** 向 iframe 发送消息（使用 '*' 作为目标 origin，因为 iframe 可能被 ESA 反向代理到不同域名） */
+  const sendMessageToIframe = useCallback((message: { type: string; payload: unknown }) => {
+    iframeRef.current?.contentWindow?.postMessage(message, '*');
+  }, []);
 
   /* 监听连接状态，同步给 iframe */
   useEffect(() => {
     const unsub = webBridge.onConnectionStatusChange((status) => {
       setConnStatus(status);
+      /* 断开连接时清除初始化帧缓存，避免重推过时数据 */
+      if (status === 'disconnected') {
+        initFrameRef.current = null;
+      }
       sendMessageToIframe({
         type: 'bms:connection-status',
         payload: { status },
@@ -56,9 +69,11 @@ export function UIContent() {
   useEffect(() => {
     const unsub = webBridge.onInitComplete((success, frame) => {
       console.log('[AIBMS] Init complete:', success, frame ? Array.from(frame).map(b => b.toString(16).padStart(2, '0')).join(' ') : 'no frame');
+      /* 保存初始化帧响应，以便 iframe 加载完成后重新推送 */
+      initFrameRef.current = { success, frame: frame ? Array.from(frame) : null };
       sendMessageToIframe({
         type: 'bms:init-complete',
-        payload: { success, frame: frame ? Array.from(frame) : null },
+        payload: initFrameRef.current,
       });
     });
     return unsub;
@@ -92,7 +107,7 @@ export function UIContent() {
       const data = event.data;
       if (!data || typeof data !== 'object' || !data.type) return;
 
-      handleIframeMessage(data);
+      handleMessageRef.current(data);
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
@@ -153,6 +168,32 @@ export function UIContent() {
         }
         break;
       }
+      /* iframe 请求重新推送状态（防止消息丢失） */
+      case 'bms:request-status': {
+        /* 重新推送当前连接状态 */
+        sendMessageToIframe({
+          type: 'bms:connection-status',
+          payload: { status: connStatus },
+        });
+        /* 重新推送初始化帧响应（如果有） */
+        if (initFrameRef.current) {
+          sendMessageToIframe({
+            type: 'bms:init-complete',
+            payload: initFrameRef.current,
+          });
+        }
+        /* 重新推送主题和语言 */
+        sendMessageToIframe({
+          type: 'bms:theme-change',
+          payload: { theme },
+        });
+        const locale = document.documentElement.lang?.startsWith('zh') ? 'zh' : 'en';
+        sendMessageToIframe({
+          type: 'bms:locale-change',
+          payload: { locale },
+        });
+        break;
+      }
       /* iframe 请求发送指令 — 转发为协议帧 */
       case 'bms:command': {
         const payload = msg.payload as { requestId?: string; frame?: number[] };
@@ -171,12 +212,10 @@ export function UIContent() {
         break;
       }
     }
-  }, []);
+  }, [connStatus, theme, sendMessageToIframe]);
 
-  /** 向 iframe 发送消息 */
-  const sendMessageToIframe = useCallback((message: { type: string; payload: unknown }) => {
-    iframeRef.current?.contentWindow?.postMessage(message, UI_URL);
-  }, []);
+  /* 保持 ref 指向最新的 handleIframeMessage */
+  handleMessageRef.current = handleIframeMessage;
 
   /** iframe 加载完成 */
   const handleIframeLoad = useCallback(() => {
@@ -194,6 +233,14 @@ export function UIContent() {
       type: 'bms:locale-change',
       payload: { locale },
     });
+    /* 重新推送初始化帧响应（如果 iframe 加载前已收到） */
+    if (initFrameRef.current) {
+      console.log('[AIBMS] Re-sending init-complete to iframe on load');
+      sendMessageToIframe({
+        type: 'bms:init-complete',
+        payload: initFrameRef.current,
+      });
+    }
   }, [connStatus, theme, sendMessageToIframe]);
 
   return (
