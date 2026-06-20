@@ -14,6 +14,19 @@ import {
 } from '@/shared/types/bridge';
 import { DataQueue } from '@/shared/lib/data-queue';
 import { extractFrames } from '@/shared/lib/protocol';
+import { crc16 } from '@/shared/lib/crc16';
+
+/** 初始化帧：00 03 00 00 00 03 + CRC16 */
+const INIT_FRAME = (() => {
+  const body = [0x00, 0x03, 0x00, 0x00, 0x00, 0x03];
+  const [crcLow, crcHigh] = crc16(new Uint8Array(body));
+  return new Uint8Array([...body, crcLow, crcHigh]);
+})();
+
+/** 初始化帧最大重试次数 */
+const INIT_MAX_RETRIES = 3;
+/** 初始化帧超时时间 ms */
+const INIT_TIMEOUT = 5000;
 
 // ==================== Web Bridge 实现 ====================
 
@@ -41,6 +54,12 @@ class WebBridgeManager implements WebBridgeAPI {
   // 数据队列与帧缓冲
   private _queue: DataQueue;
   private _frameBuffer: Uint8Array = new Uint8Array(0);
+
+  // 初始化帧状态
+  private _initSent = false;
+  private _initRetryCount = 0;
+  private _initTimer: ReturnType<typeof setTimeout> | null = null;
+  private _initCallbacks: Set<(success: boolean, frame?: Uint8Array) => void> = new Set();
 
   constructor() {
     this._config = {
@@ -92,6 +111,9 @@ class WebBridgeManager implements WebBridgeAPI {
     this.setStatus('disconnected');
     this._queue.stop();
     this._frameBuffer = new Uint8Array(0);
+    this._initSent = false;
+    this._initRetryCount = 0;
+    if (this._initTimer) { clearTimeout(this._initTimer); this._initTimer = null; }
     toast.info(i18n.t('bridge.disconnected'));
   }
 
@@ -117,6 +139,50 @@ class WebBridgeManager implements WebBridgeAPI {
   /** 获取数据队列状态 */
   getQueueStatus() {
     return this._queue.status;
+  }
+
+  /** 连接成功后发送初始化帧，等待响应或超时重试 */
+  private sendInitFrame(): void {
+    this._initSent = false;
+    this._initRetryCount = 0;
+    this._attemptInit();
+  }
+
+  /** 尝试发送初始化帧 */
+  private _attemptInit(): void {
+    if (this._initSent) return;
+    if (this._initRetryCount >= INIT_MAX_RETRIES) {
+      console.warn('[AIBMS] Init frame max retries reached');
+      this._initCallbacks.forEach((cb) => cb(false));
+      return;
+    }
+
+    this._initRetryCount++;
+    console.log(`[AIBMS] Sending init frame (attempt ${this._initRetryCount})`);
+
+    this._sendRaw(INIT_FRAME).then((sent) => {
+      if (!sent) {
+        console.warn('[AIBMS] Init frame send failed, retrying...');
+        this._initTimer = setTimeout(() => this._attemptInit(), 1000);
+        return;
+      }
+      console.log('[AIBMS] Init frame sent, waiting for response...');
+      this._initTimer = setTimeout(() => {
+        if (!this._initSent) {
+          console.warn(`[AIBMS] Init frame timeout (attempt ${this._initRetryCount})`);
+          this._attemptInit();
+        }
+      }, INIT_TIMEOUT);
+    }).catch((err) => {
+      console.error('[AIBMS] Init frame send error:', err);
+      this._initTimer = setTimeout(() => this._attemptInit(), 1000);
+    });
+  }
+
+  /** 注册初始化完成回调 */
+  onInitComplete(callback: (success: boolean, frame?: Uint8Array) => void): () => void {
+    this._initCallbacks.add(callback);
+    return () => { this._initCallbacks.delete(callback); };
   }
 
   onDataReceived(callback: DataReceiveCallback): () => void {
@@ -265,6 +331,8 @@ class WebBridgeManager implements WebBridgeAPI {
     this.setStatus('connected', i18n.t('bridge.connectedBluetooth', { deviceName }));
     this._queue.start();
     toast.success(i18n.t('bridge.connectedBluetooth', { deviceName }));
+    /* 连接成功后发送初始化帧 */
+    this.sendInitFrame();
     return true;
   }
 
@@ -304,6 +372,8 @@ class WebBridgeManager implements WebBridgeAPI {
     this.setStatus('connected', i18n.t('bridge.connectedSerial', { baudRate }));
     this._queue.start();
     toast.success(i18n.t('bridge.connectedSerial', { baudRate }));
+    /* 连接成功后发送初始化帧 */
+    this.sendInitFrame();
     return true;
   }
 
@@ -398,6 +468,21 @@ class WebBridgeManager implements WebBridgeAPI {
 
     /* 推送提取到的完整帧 */
     if (frames.length > 0) {
+      /* 检测初始化帧响应：地址码 0x00，功能码 0x03 */
+      if (!this._initSent) {
+        for (const frame of frames) {
+          if (frame.length >= 2 && frame[0] === 0x00 && frame[1] === 0x03) {
+            this._initSent = true;
+            if (this._initTimer) {
+              clearTimeout(this._initTimer);
+              this._initTimer = null;
+            }
+            console.log('[AIBMS] Init frame response received');
+            this._initCallbacks.forEach((cb) => cb(true, frame));
+            break;
+          }
+        }
+      }
       this._frameCallbacks.forEach((cb) => cb(frames));
     }
   }

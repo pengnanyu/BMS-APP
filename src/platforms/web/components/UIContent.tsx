@@ -52,6 +52,18 @@ export function UIContent() {
     return unsub;
   }, []);
 
+  /* 监听初始化帧完成，通知 iframe 加载协议数据库 */
+  useEffect(() => {
+    const unsub = webBridge.onInitComplete((success, frame) => {
+      console.log('[AIBMS] Init complete:', success, frame ? Array.from(frame).map(b => b.toString(16).padStart(2, '0')).join(' ') : 'no frame');
+      sendMessageToIframe({
+        type: 'bms:init-complete',
+        payload: { success, frame: frame ? Array.from(frame) : null },
+      });
+    });
+    return unsub;
+  }, []);
+
   /* 监听语言变化，同步给 iframe */
   useEffect(() => {
     const handleLocaleChange = (e: Event) => {
