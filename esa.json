@@ -1,6 +1,10 @@
 {
   "name": "bms-app",
   "description": "AIBMS Smart Battery Management System",
+  "build": {
+    "command": "npm run build",
+    "output": "dist"
+  },
   "assets": {
     "directory": "./dist"
   }
