@@ -7,8 +7,9 @@ import { BAUD_RATE_OPTIONS, PARITY_OPTIONS, CONNECTION_TYPE_OPTIONS } from '@/sh
 import { cn } from '@/lib/utils';
 import { Bluetooth, Cable, Loader2, Sun, Moon, Monitor, Languages } from 'lucide-react';
 
-/** 从 package.json 读取版本号 */
+/** 从 package.json 读取版本号，仅在控制台打印 */
 const APP_VERSION = __APP_VERSION__;
+console.log(`[AIBMS] BMS APP version: ${APP_VERSION}`);
 
 let _canvasCtx: CanvasRenderingContext2D | null = null;
 
@@ -311,7 +312,6 @@ export function ConnectionBar() {
         </button>
 
         <div className="flex-1" />
-        <span className="text-[10px] text-muted-foreground/50 font-mono shrink-0">v{APP_VERSION}</span>
         <LanguageToggle />
         <ThemeToggle />
       </div>

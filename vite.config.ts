@@ -5,8 +5,10 @@ import { VitePWA } from "vite-plugin-pwa";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import { readFileSync } from "node:fs";
+import { resolve, dirname } from "node:path";
 
-const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf-8"));
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const pkg = JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf-8"));
 
 const vesaPlugins = fs.existsSync(new URL("./.vesa", import.meta.url))
   ? [
