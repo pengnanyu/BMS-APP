@@ -317,6 +317,20 @@ class WebBridgeManager implements WebBridgeAPI {
 
     this._bluetoothCharacteristic = writeChar;
 
+    /* 请求 MTU 512（Web Bluetooth API 不直接支持，但可通过 negotiate 协商） */
+    try {
+      if (device.gatt?.connected) {
+        const server = device.gatt;
+        /* 尝试通过 BLE 连接参数更新请求更大的 MTU */
+        if ('requestMTU' in server) {
+          await (server as any).requestMTU(512);
+          console.log('[AIBMS] MTU requested: 512');
+        }
+      }
+    } catch (e) {
+      console.warn('[AIBMS] MTU request failed (will use default):', e);
+    }
+
     // 启用 Notify
     await notifyChar.startNotifications();
     notifyChar.addEventListener('characteristicvaluechanged', (event) => {
@@ -430,7 +444,8 @@ class WebBridgeManager implements WebBridgeAPI {
     try {
       if (this._config.type === 'bluetooth') {
         if (!this._bluetoothCharacteristic) return false;
-        const chunkSize = 20;
+        /* MTU 512 减去 3 字节 ATT 头 = 509 字节有效载荷 */
+        const chunkSize = 509;
         for (let i = 0; i < data.length; i += chunkSize) {
           const chunk = data.slice(i, i + chunkSize);
           await this._bluetoothCharacteristic.writeValueWithoutResponse(chunk);
