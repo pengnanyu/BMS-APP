@@ -12,6 +12,8 @@ import {
   DEFAULT_BLUETOOTH_CONFIG,
   DEFAULT_SERIAL_CONFIG,
 } from '@/shared/types/bridge';
+import { DataQueue } from '@/shared/lib/data-queue';
+import { extractFrames } from '@/shared/lib/protocol';
 
 // ==================== Web Bridge 实现 ====================
 
@@ -24,6 +26,7 @@ class WebBridgeManager implements WebBridgeAPI {
   private _config: ConnectionConfig;
   private _dataCallbacks: Set<DataReceiveCallback> = new Set();
   private _statusCallbacks: Set<ConnectionStatusCallback> = new Set();
+  private _frameCallbacks: Set<(frames: Uint8Array[]) => void> = new Set();
 
   // Web Bluetooth API
   private _bluetoothDevice: BluetoothDevice | null = null;
@@ -35,6 +38,10 @@ class WebBridgeManager implements WebBridgeAPI {
   private _serialWriter: WritableStreamDefaultWriter<Uint8Array> | null = null;
   private _readingSerial = false;
 
+  // 数据队列与帧缓冲
+  private _queue: DataQueue;
+  private _frameBuffer: Uint8Array = new Uint8Array(0);
+
   constructor() {
     this._config = {
       type: 'bluetooth',
@@ -42,7 +49,9 @@ class WebBridgeManager implements WebBridgeAPI {
       serial: { ...DEFAULT_SERIAL_CONFIG },
     };
 
-    // 暴露全局 API 给 iframe
+    this._queue = new DataQueue({ maxSize: 64, maxRetries: 3, defaultTimeout: 5000 });
+    this._queue.setSendFn((data) => this._sendRaw(data));
+
     this.exposeToWindow();
   }
 
@@ -81,6 +90,8 @@ class WebBridgeManager implements WebBridgeAPI {
       console.error('Disconnect error:', error);
     }
     this.setStatus('disconnected');
+    this._queue.stop();
+    this._frameBuffer = new Uint8Array(0);
     toast.info(i18n.t('bridge.disconnected'));
   }
 
@@ -93,33 +104,33 @@ class WebBridgeManager implements WebBridgeAPI {
       toast.warning(i18n.t('bridge.deviceNotConnected'));
       return false;
     }
+    this._queue.enqueue(data);
+    return true;
+  }
 
-    try {
-      if (this._config.type === 'bluetooth') {
-        if (!this._bluetoothCharacteristic) return false;
-        // BLE 单次写入限制 20 字节，分包发送
-        const chunkSize = 20;
-        for (let i = 0; i < data.length; i += chunkSize) {
-          const chunk = data.slice(i, i + chunkSize);
-          await this._bluetoothCharacteristic.writeValueWithoutResponse(chunk);
-        }
-        return true;
-      } else {
-        if (!this._serialWriter) return false;
-        await this._serialWriter.write(data);
-        return true;
-      }
-    } catch (error) {
-      console.error('Send data error:', error);
-      toast.error(i18n.t('bridge.sendDataFailed'));
-      return false;
-    }
+  /** 通过数据队列发送原始帧（带请求 ID 用于响应匹配） */
+  sendFrame(data: Uint8Array, requestId?: string): string {
+    const id = this._queue.enqueue(data, requestId);
+    return id;
+  }
+
+  /** 获取数据队列状态 */
+  getQueueStatus() {
+    return this._queue.status;
   }
 
   onDataReceived(callback: DataReceiveCallback): () => void {
     this._dataCallbacks.add(callback);
     return () => {
       this._dataCallbacks.delete(callback);
+    };
+  }
+
+  /** 注册完整帧接收回调（已通过 RTU 分隔符和 CRC16 校验） */
+  onFramesReceived(callback: (frames: Uint8Array[]) => void): () => void {
+    this._frameCallbacks.add(callback);
+    return () => {
+      this._frameCallbacks.delete(callback);
     };
   }
 
@@ -252,6 +263,7 @@ class WebBridgeManager implements WebBridgeAPI {
 
     const deviceName = device.name || i18n.t('bridge.unknownDevice');
     this.setStatus('connected', i18n.t('bridge.connectedBluetooth', { deviceName }));
+    this._queue.start();
     toast.success(i18n.t('bridge.connectedBluetooth', { deviceName }));
     return true;
   }
@@ -290,6 +302,7 @@ class WebBridgeManager implements WebBridgeAPI {
     this._serialWriter = port.writable!.getWriter();
 
     this.setStatus('connected', i18n.t('bridge.connectedSerial', { baudRate }));
+    this._queue.start();
     toast.success(i18n.t('bridge.connectedSerial', { baudRate }));
     return true;
   }
@@ -342,13 +355,51 @@ class WebBridgeManager implements WebBridgeAPI {
 
   // ==================== 内部方法 ====================
 
+  /** 底层发送数据（不经过队列，由队列调用） */
+  private async _sendRaw(data: Uint8Array): Promise<boolean> {
+    try {
+      if (this._config.type === 'bluetooth') {
+        if (!this._bluetoothCharacteristic) return false;
+        const chunkSize = 20;
+        for (let i = 0; i < data.length; i += chunkSize) {
+          const chunk = data.slice(i, i + chunkSize);
+          await this._bluetoothCharacteristic.writeValueWithoutResponse(chunk);
+        }
+        return true;
+      } else {
+        if (!this._serialWriter) return false;
+        await this._serialWriter.write(data);
+        return true;
+      }
+    } catch (error) {
+      console.error('Send data error:', error);
+      return false;
+    }
+  }
+
   private setStatus(status: ConnectionStatus, message?: string): void {
     this._status = status;
     this._statusCallbacks.forEach((cb) => cb(status, message));
   }
 
   private notifyDataReceived(data: Uint8Array): void {
+    /* 追加到帧缓冲区 */
+    const merged = new Uint8Array(this._frameBuffer.length + data.length);
+    merged.set(this._frameBuffer);
+    merged.set(data, this._frameBuffer.length);
+    this._frameBuffer = merged;
+
+    /* 从缓冲区提取完整帧 */
+    const { frames, remainder } = extractFrames(this._frameBuffer);
+    this._frameBuffer = remainder;
+
+    /* 推送原始数据给回调 */
     this._dataCallbacks.forEach((cb) => cb(data));
+
+    /* 推送提取到的完整帧 */
+    if (frames.length > 0) {
+      this._frameCallbacks.forEach((cb) => cb(frames));
+    }
   }
 
   /** 将 Bridge API 暴露到 window 对象，供 iframe 调用 */

@@ -8,7 +8,7 @@ import { Loader2 } from 'lucide-react';
 
 const UI_URL = import.meta.env.VITE_UI_URL || 'https://ui.aibms.net';
 
-/** UI 内容区 - 加载 iframe 子 UI */
+/** UI 内容区 - 加载 iframe 子 UI，负责数据转发与帧级通信 */
 export function UIContent() {
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -28,13 +28,26 @@ export function UIContent() {
     return unsub;
   }, []);
 
-  /* 监听数据，同步给 iframe */
+  /* 监听原始数据，同步给 iframe（向后兼容） */
   useEffect(() => {
     const unsub = webBridge.onDataReceived((data) => {
       sendMessageToIframe({
-        type: 'bms:realtime-data',
+        type: 'bms:raw-data',
         payload: { raw: Array.from(data) },
       });
+    });
+    return unsub;
+  }, []);
+
+  /* 监听完整帧，同步给 iframe（协议级通信） */
+  useEffect(() => {
+    const unsub = webBridge.onFramesReceived((frames) => {
+      for (const frame of frames) {
+        sendMessageToIframe({
+          type: 'bms:frame-received',
+          payload: { frame: Array.from(frame) },
+        });
+      }
     });
     return unsub;
   }, []);
@@ -75,44 +88,74 @@ export function UIContent() {
 
   const handleIframeMessage = useCallback((msg: { type: string; payload: unknown }) => {
     switch (msg.type) {
-      case 'bms:param-read': {
-        /* iframe 请求读取参数 - 后续对接协议 */
-        sendMessageToIframe({
-          type: 'bms:param-read-response',
-          payload: { requestId: (msg.payload as Record<string, unknown>)?.requestId, params: [] },
-        });
-        break;
-      }
-      case 'bms:param-write': {
-        /* iframe 请求写入参数 - 后续对接协议 */
-        sendMessageToIframe({
-          type: 'bms:param-write-response',
-          payload: { requestId: (msg.payload as Record<string, unknown>)?.requestId, success: false },
-        });
-        break;
-      }
-      case 'bms:fault-records': {
-        /* iframe 请求异常记录 - 后续对接协议 */
-        sendMessageToIframe({
-          type: 'bms:fault-records',
-          payload: { requestId: (msg.payload as Record<string, unknown>)?.requestId, records: [] },
-        });
-        break;
-      }
-      case 'bms:command': {
-        /* iframe 请求发送指令 - 后续对接协议 */
-        sendMessageToIframe({
-          type: 'bms:command-response',
-          payload: { requestId: (msg.payload as Record<string, unknown>)?.requestId, success: false },
-        });
-        break;
-      }
-      case 'bms:realtime-data': {
-        /* iframe 订阅/取消订阅实时数据 */
-        const payload = msg.payload as { action?: string };
-        if (payload?.action === 'subscribe') {
-          /* 已通过 onDataReceived 自动推送 */
+      /* iframe 请求发送协议帧 — 通过数据队列发送 */
+      case 'bms:frame-send': {
+        const payload = msg.payload as { frame?: number[]; requestId?: string };
+        if (payload.frame && Array.isArray(payload.frame)) {
+          const data = new Uint8Array(payload.frame);
+          const queueId = webBridge.sendFrame(data, payload.requestId);
+          /* 回复队列 ID */
+          sendMessageToIframe({
+            type: 'bms:frame-send-ack',
+            payload: { requestId: payload.requestId, queueId },
+          });
         }
+        break;
+      }
+      /* iframe 请求读取参数 — 转发为协议帧 */
+      case 'bms:param-read': {
+        const payload = msg.payload as { requestId?: string; frame?: number[] };
+        if (payload.frame && Array.isArray(payload.frame)) {
+          webBridge.sendFrame(new Uint8Array(payload.frame), payload.requestId);
+        } else {
+          sendMessageToIframe({
+            type: 'bms:param-read-response',
+            payload: { requestId: payload.requestId, params: [] },
+          });
+        }
+        break;
+      }
+      /* iframe 请求写入参数 — 转发为协议帧 */
+      case 'bms:param-write': {
+        const payload = msg.payload as { requestId?: string; frame?: number[] };
+        if (payload.frame && Array.isArray(payload.frame)) {
+          webBridge.sendFrame(new Uint8Array(payload.frame), payload.requestId);
+        } else {
+          sendMessageToIframe({
+            type: 'bms:param-write-response',
+            payload: { requestId: payload.requestId, success: false },
+          });
+        }
+        break;
+      }
+      /* iframe 请求异常记录 */
+      case 'bms:fault-records': {
+        const payload = msg.payload as { requestId?: string; frame?: number[] };
+        if (payload.frame && Array.isArray(payload.frame)) {
+          webBridge.sendFrame(new Uint8Array(payload.frame), payload.requestId);
+        } else {
+          sendMessageToIframe({
+            type: 'bms:fault-records-response',
+            payload: { requestId: payload.requestId, records: [] },
+          });
+        }
+        break;
+      }
+      /* iframe 请求发送指令 — 转发为协议帧 */
+      case 'bms:command': {
+        const payload = msg.payload as { requestId?: string; frame?: number[] };
+        if (payload.frame && Array.isArray(payload.frame)) {
+          webBridge.sendFrame(new Uint8Array(payload.frame), payload.requestId);
+        } else {
+          sendMessageToIframe({
+            type: 'bms:command-response',
+            payload: { requestId: payload.requestId, success: false },
+          });
+        }
+        break;
+      }
+      /* iframe 订阅/取消订阅实时数据 */
+      case 'bms:realtime-data': {
         break;
       }
     }
@@ -126,7 +169,6 @@ export function UIContent() {
   /** iframe 加载完成 */
   const handleIframeLoad = useCallback(() => {
     setLoading(false);
-    /* 同步初始状态给 iframe */
     sendMessageToIframe({
       type: 'bms:connection-status',
       payload: { status: connStatus },
@@ -144,7 +186,6 @@ export function UIContent() {
 
   return (
     <div className="absolute inset-0 top-12">
-      {/* 加载指示器 */}
       {loading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
@@ -154,7 +195,6 @@ export function UIContent() {
         </div>
       )}
 
-      {/* iframe 加载 UI */}
       <iframe
         ref={iframeRef}
         src={UI_URL}
