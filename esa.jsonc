@@ -2,7 +2,6 @@
   "name": "bms-app",
   "description": "AIBMS Smart Battery Management System",
   "assets": {
-    "directory": "./dist",
-    "notFoundStrategy": "singlePageApplication"
+    "directory": "./dist"
   }
 }
