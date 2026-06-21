@@ -41,17 +41,6 @@ export function UIContent() {
     return unsub;
   }, []);
 
-  /* 监听原始数据，同步给 iframe（向后兼容） */
-  useEffect(() => {
-    const unsub = webBridge.onDataReceived((data) => {
-      sendMessageToIframe({
-        type: 'bms:raw-data',
-        payload: { raw: Array.from(data) },
-      });
-    });
-    return unsub;
-  }, []);
-
   /* 监听完整帧，同步给 iframe（协议级通信） */
   useEffect(() => {
     const unsub = webBridge.onFramesReceived((frames) => {
