@@ -15,12 +15,17 @@ export const DEFAULT_ADDRESS = 0x00;
 
 /** 判断是否为读功能码 */
 export function isReadFuncCode(code: number): boolean {
-  return code === FUNC_CODE.READ_03 || code === FUNC_CODE.READ_30 || code === FUNC_CODE.READ_11;
+  /* 写功能码 */
+  if (code === 0x10 || code === 0x3D || code === 0x3E) return false;
+  /* 异常响应 */
+  if (code & 0x80) return false;
+  /* 其他非写功能码按读响应处理（第3字节为字节数） */
+  return true;
 }
 
 /** 判断是否为写功能码 */
 export function isWriteFuncCode(code: number): boolean {
-  return code === FUNC_CODE.WRITE_10;
+  return code === 0x10 || code === 0x3D || code === 0x3E;
 }
 
 /** 根据功能码和已有数据计算期望帧长度 */
@@ -33,7 +38,7 @@ function expectedFrameLength(data: Uint8Array): number | null {
   if (funcCode & 0x80) return 5;
 
   /* 写响应：地址(1) + 功能码(1) + CRC(2) = 4 */
-  if (funcCode === FUNC_CODE.WRITE_10) return 4;
+  if (funcCode === 0x10 || funcCode === 0x3D || funcCode === 0x3E) return 4;
 
   /* 读响应：地址(1) + 功能码(1) + 字节计数(1) + 数据(n) + CRC(2) */
   if (isReadFuncCode(funcCode)) {
