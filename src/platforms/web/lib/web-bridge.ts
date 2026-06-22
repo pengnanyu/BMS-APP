@@ -468,6 +468,7 @@ class WebBridgeManager implements WebBridgeAPI {
   }
 
   private notifyDataReceived(data: Uint8Array): void {
+    console.log('[AIBMS] Raw data received:', Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' '));
     /* 追加到帧缓冲区 */
     const merged = new Uint8Array(this._frameBuffer.length + data.length);
     merged.set(this._frameBuffer);
@@ -477,6 +478,7 @@ class WebBridgeManager implements WebBridgeAPI {
     /* 从缓冲区提取完整帧 */
     const { frames, remainder } = extractFrames(this._frameBuffer);
     this._frameBuffer = remainder;
+    console.log('[AIBMS] Extracted frames:', frames.length, 'remainder:', remainder.length);
 
     /* 推送原始数据给回调 */
     this._dataCallbacks.forEach((cb) => cb(data));
