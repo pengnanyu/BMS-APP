@@ -121,7 +121,9 @@ export function parseReadRequest(frame: Uint8Array): {
   };
 }
 
-/** 解析写请求帧 */
+/** 解析写请求帧（非标准 Modbus：无字节计数字段）
+ *  格式：地址码(1B) + 功能码0x10(1B) + 起始地址(2B) + 寄存器数量(2B) + 数据(2*nB) + CRC16(2B)
+ */
 export function parseWriteRequest(frame: Uint8Array): {
   address: number;
   funcCode: number;
@@ -129,14 +131,14 @@ export function parseWriteRequest(frame: Uint8Array): {
   length: number;
   data: number[];
 } | null {
-  if (frame.length < 11) return null;
+  if (frame.length < 10) return null;
   if (!verifyCrc16(frame)) return null;
 
-  const byteCount = (frame[4] << 8) | frame[5];
-  if (frame.length !== 6 + byteCount * 2 + 2) return null;
+  const regCount = (frame[4] << 8) | frame[5];
+  if (frame.length !== 6 + regCount * 2 + 2) return null;
 
   const writeData: number[] = [];
-  for (let i = 0; i < byteCount; i++) {
+  for (let i = 0; i < regCount; i++) {
     writeData.push((frame[6 + i * 2] << 8) | frame[6 + i * 2 + 1]);
   }
 
@@ -144,7 +146,7 @@ export function parseWriteRequest(frame: Uint8Array): {
     address: frame[0],
     funcCode: frame[1],
     startAddr: (frame[2] << 8) | frame[3],
-    length: byteCount,
+    length: regCount,
     data: writeData,
   };
 }
