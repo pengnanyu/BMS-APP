@@ -63,7 +63,11 @@ export function extractFrames(data: Uint8Array): { frames: Uint8Array[]; remaind
 
     const expected = expectedFrameLength(remaining);
     if (expected === null) {
-      /* 未知功能码：尝试 CRC16 扫描找到帧边界（最少5字节，最多256字节） */
+      /* 未知功能码：尝试 CRC16 扫描找到帧边界 */
+      if (remaining.length < 5) {
+        /* 数据太短，无法扫描，保留在缓冲区等待更多数据 */
+        break;
+      }
       let found = false;
       for (let len = 5; len <= Math.min(remaining.length, 256); len++) {
         if (verifyCrc16(remaining.slice(0, len))) {

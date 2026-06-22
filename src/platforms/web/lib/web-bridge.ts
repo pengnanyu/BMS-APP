@@ -469,26 +469,23 @@ class WebBridgeManager implements WebBridgeAPI {
 
   private notifyDataReceived(data: Uint8Array): void {
     console.log('[AIBMS] Raw data received:', Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' '));
-    /* 追加到帧缓冲区 */
+
+    /* 透传原始数据给 iframe，帧提取由 bms-ui 负责 */
+    this._frameCallbacks.forEach((cb) => cb([data]));
+
+    /* 同时保留本地帧提取逻辑（用于初始化检测等） */
     const merged = new Uint8Array(this._frameBuffer.length + data.length);
     merged.set(this._frameBuffer);
     merged.set(data, this._frameBuffer.length);
     this._frameBuffer = merged;
 
-    /* 从缓冲区提取完整帧 */
     const { frames, remainder } = extractFrames(this._frameBuffer);
     this._frameBuffer = remainder;
     console.log('[AIBMS] Extracted frames:', frames.length, 'remainder:', remainder.length);
 
-    /* 推送原始数据给回调 */
-    this._dataCallbacks.forEach((cb) => cb(data));
-
-    /* 推送提取到的完整帧 */
     if (frames.length > 0) {
-      /* 收到响应帧，确认队列中最早的 pending 项（避免超时重发） */
       this._queue.ackOldestPending();
 
-      /* 检测初始化帧响应：地址码 0x00，任意有效功能码（非异常响应）均视为有效响应 */
       if (!this._initSent) {
         for (const frame of frames) {
           if (frame.length >= 2 && frame[0] === 0x00 && !(frame[1] & 0x80)) {
@@ -503,7 +500,6 @@ class WebBridgeManager implements WebBridgeAPI {
           }
         }
       }
-      this._frameCallbacks.forEach((cb) => cb(frames));
     }
   }
 
