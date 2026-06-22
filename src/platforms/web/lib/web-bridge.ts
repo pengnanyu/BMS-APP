@@ -55,10 +55,11 @@ class WebBridgeManager implements WebBridgeAPI {
   private _queue: DataQueue;
   private _frameBuffer: Uint8Array = new Uint8Array(0);
 
-  // RTU 时间打包：5ms 内没有收到新数据就把缓冲数据打包发送给 iframe
-  private _rtuBuffer: Uint8Array = new Uint8Array(0);
-  private _rtuTimer: ReturnType<typeof setTimeout> | null = null;
-  private static readonly RTU_TIMEOUT_MS = 5;
+  // IDLE 空闲检测：串口/蓝牙数据到达时缓冲，空闲后打包发送给 iframe
+  // Modbus RTU 规范：3.5 字符时间无数据即为一帧结束，9600bps 下约 4ms，取 5ms
+  private _idleBuffer: Uint8Array = new Uint8Array(0);
+  private _idleTimer: ReturnType<typeof setTimeout> | null = null;
+  private static readonly IDLE_TIMEOUT_MS = 5;
 
   // 初始化帧状态
   private _initSent = false;
@@ -116,8 +117,8 @@ class WebBridgeManager implements WebBridgeAPI {
     this.setStatus('disconnected');
     this._queue.stop();
     this._frameBuffer = new Uint8Array(0);
-    this._rtuBuffer = new Uint8Array(0);
-    if (this._rtuTimer) { clearTimeout(this._rtuTimer); this._rtuTimer = null; }
+    this._idleBuffer = new Uint8Array(0);
+    if (this._idleTimer) { clearTimeout(this._idleTimer); this._idleTimer = null; }
     this._initSent = false;
     this._initRetryCount = 0;
     if (this._initTimer) { clearTimeout(this._initTimer); this._initTimer = null; }
@@ -475,19 +476,19 @@ class WebBridgeManager implements WebBridgeAPI {
   }
 
   private notifyDataReceived(data: Uint8Array): void {
-    /* RTU 时间打包：将收到的数据追加到缓冲区，5ms 内没有新数据则打包发送 */
-    const merged = new Uint8Array(this._rtuBuffer.length + data.length);
-    merged.set(this._rtuBuffer);
-    merged.set(data, this._rtuBuffer.length);
-    this._rtuBuffer = merged;
+    /* IDLE 空闲检测：将收到的数据追加到缓冲区，空闲后打包发送给 iframe */
+    const merged = new Uint8Array(this._idleBuffer.length + data.length);
+    merged.set(this._idleBuffer);
+    merged.set(data, this._idleBuffer.length);
+    this._idleBuffer = merged;
 
-    /* 重置定时器：每次收到数据都重新计时 */
-    if (this._rtuTimer) {
-      clearTimeout(this._rtuTimer);
+    /* 收到数据时重置空闲定时器：只要持续有数据到达就不发送 */
+    if (this._idleTimer) {
+      clearTimeout(this._idleTimer);
     }
-    this._rtuTimer = setTimeout(() => {
-      this._flushRtuBuffer();
-    }, WebBridgeManager.RTU_TIMEOUT_MS);
+    this._idleTimer = setTimeout(() => {
+      this._flushIdleBuffer();
+    }, WebBridgeManager.IDLE_TIMEOUT_MS);
 
     /* 同时保留本地帧提取逻辑（用于初始化检测等） */
     const mergedLocal = new Uint8Array(this._frameBuffer.length + data.length);
@@ -517,12 +518,12 @@ class WebBridgeManager implements WebBridgeAPI {
     }
   }
 
-  /** 将 RTU 缓冲区中的数据打包发送给 iframe */
-  private _flushRtuBuffer(): void {
-    if (this._rtuBuffer.length === 0) return;
-    const data = this._rtuBuffer;
-    this._rtuBuffer = new Uint8Array(0);
-    this._rtuTimer = null;
+  /** IDLE 空闲：将缓冲区中的数据打包发送给 iframe */
+  private _flushIdleBuffer(): void {
+    if (this._idleBuffer.length === 0) return;
+    const data = this._idleBuffer;
+    this._idleBuffer = new Uint8Array(0);
+    this._idleTimer = null;
     /* 透传打包后的原始数据给 iframe，帧提取由 bms-ui 负责 */
     this._frameCallbacks.forEach((cb) => cb([data]));
   }
