@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
+import { deployCompatPlugin } from "./src/plugins/deploy-compat";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf-8"));
@@ -32,6 +33,7 @@ export default defineConfig(({ mode }) => ({
     ...vesaPlugins,
     tailwindcss(),
     react(),
+    deployCompatPlugin(),
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: [

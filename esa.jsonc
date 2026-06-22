@@ -1,6 +1,7 @@
 {
   "name": "bms-app",
   "description": "AIBMS Smart Battery Management System",
+  "commitMessage": "build: update bms-app",
   "build": {
     "command": "npm run build",
     "output": "dist"

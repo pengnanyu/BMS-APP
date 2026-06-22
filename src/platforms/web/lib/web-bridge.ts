@@ -55,12 +55,6 @@ class WebBridgeManager implements WebBridgeAPI {
   private _queue: DataQueue;
   private _frameBuffer: Uint8Array = new Uint8Array(0);
 
-  // IDLE 空闲检测：串口/蓝牙数据到达时缓冲，空闲后打包发送给 iframe
-  // Modbus RTU 规范：3.5 字符时间无数据即为一帧结束，9600bps 下约 4ms，取 5ms
-  private _idleBuffer: Uint8Array = new Uint8Array(0);
-  private _idleTimer: ReturnType<typeof setTimeout> | null = null;
-  private static readonly IDLE_TIMEOUT_MS = 5;
-
   // 初始化帧状态
   private _initSent = false;
   private _initRetryCount = 0;
@@ -117,8 +111,6 @@ class WebBridgeManager implements WebBridgeAPI {
     this.setStatus('disconnected');
     this._queue.stop();
     this._frameBuffer = new Uint8Array(0);
-    this._idleBuffer = new Uint8Array(0);
-    if (this._idleTimer) { clearTimeout(this._idleTimer); this._idleTimer = null; }
     this._initSent = false;
     this._initRetryCount = 0;
     if (this._initTimer) { clearTimeout(this._initTimer); this._initTimer = null; }
@@ -476,32 +468,23 @@ class WebBridgeManager implements WebBridgeAPI {
   }
 
   private notifyDataReceived(data: Uint8Array): void {
-    /* IDLE 空闲检测：将收到的数据追加到缓冲区，空闲后打包发送给 iframe */
-    const merged = new Uint8Array(this._idleBuffer.length + data.length);
-    merged.set(this._idleBuffer);
-    merged.set(data, this._idleBuffer.length);
-    this._idleBuffer = merged;
+    /* 追加到帧缓冲区 */
+    const merged = new Uint8Array(this._frameBuffer.length + data.length);
+    merged.set(this._frameBuffer);
+    merged.set(data, this._frameBuffer.length);
+    this._frameBuffer = merged;
 
-    /* 收到数据时重置空闲定时器：只要持续有数据到达就不发送 */
-    if (this._idleTimer) {
-      clearTimeout(this._idleTimer);
-    }
-    this._idleTimer = setTimeout(() => {
-      this._flushIdleBuffer();
-    }, WebBridgeManager.IDLE_TIMEOUT_MS);
-
-    /* 同时保留本地帧提取逻辑（用于初始化检测等） */
-    const mergedLocal = new Uint8Array(this._frameBuffer.length + data.length);
-    mergedLocal.set(this._frameBuffer);
-    mergedLocal.set(data, this._frameBuffer.length);
-    this._frameBuffer = mergedLocal;
-
+    /* 基于帧结构 + CRC16 提取完整帧 */
     const { frames, remainder } = extractFrames(this._frameBuffer);
     this._frameBuffer = remainder;
 
     if (frames.length > 0) {
       this._queue.ackOldestPending();
 
+      /* 完整帧发送给 iframe（每帧独立发送，不再透传原始数据） */
+      this._frameCallbacks.forEach((cb) => cb(frames));
+
+      /* 本地初始化检测 */
       if (!this._initSent) {
         for (const frame of frames) {
           if (frame.length >= 2 && frame[0] === 0x00 && !(frame[1] & 0x80)) {
@@ -516,16 +499,6 @@ class WebBridgeManager implements WebBridgeAPI {
         }
       }
     }
-  }
-
-  /** IDLE 空闲：将缓冲区中的数据打包发送给 iframe */
-  private _flushIdleBuffer(): void {
-    if (this._idleBuffer.length === 0) return;
-    const data = this._idleBuffer;
-    this._idleBuffer = new Uint8Array(0);
-    this._idleTimer = null;
-    /* 透传打包后的原始数据给 iframe，帧提取由 bms-ui 负责 */
-    this._frameCallbacks.forEach((cb) => cb([data]));
   }
 
   /** 将 Bridge API 暴露到 window 对象，供 iframe 调用 */
