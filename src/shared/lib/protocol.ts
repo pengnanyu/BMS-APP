@@ -63,8 +63,21 @@ export function extractFrames(data: Uint8Array): { frames: Uint8Array[]; remaind
 
     const expected = expectedFrameLength(remaining);
     if (expected === null) {
-      /* 数据不足，无法判断帧长度 */
-      break;
+      /* 未知功能码：尝试 CRC16 扫描找到帧边界（最少5字节，最多256字节） */
+      let found = false;
+      for (let len = 5; len <= Math.min(remaining.length, 256); len++) {
+        if (verifyCrc16(remaining.slice(0, len))) {
+          frames.push(remaining.slice(0, len));
+          offset += len;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        /* CRC 扫描也找不到，跳过当前字节 */
+        offset++;
+      }
+      continue;
     }
 
     if (remaining.length < expected) {
