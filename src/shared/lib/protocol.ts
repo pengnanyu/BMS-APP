@@ -13,13 +13,10 @@ export const FUNC_CODE = {
 /** 默认地址码 */
 export const DEFAULT_ADDRESS = 0x00;
 
-/** 判断是否为读功能码 */
+/** 判断是否为读功能码 — 透传模式：除写功能码和异常外，都按读响应格式处理 */
 export function isReadFuncCode(code: number): boolean {
-  /* 写功能码 */
-  if (code === 0x10 || code === 0x3D || code === 0x3E) return false;
-  /* 异常响应 */
   if (code & 0x80) return false;
-  /* 其他非写功能码按读响应处理（第3字节为字节数） */
+  if (code === 0x10 || code === 0x3D || code === 0x3E) return false;
   return true;
 }
 
@@ -38,7 +35,7 @@ function expectedFrameLength(data: Uint8Array): number | null {
   if (funcCode & 0x80) return 5;
 
   /* 写响应：地址(1) + 功能码(1) + CRC(2) = 4 */
-  if (funcCode === 0x10 || funcCode === 0x3D || funcCode === 0x3E) return 4;
+  if (isWriteFuncCode(funcCode)) return 4;
 
   /* 读响应：地址(1) + 功能码(1) + 字节计数(1) + 数据(n) + CRC(2) */
   if (isReadFuncCode(funcCode)) {
