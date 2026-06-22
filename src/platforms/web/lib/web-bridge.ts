@@ -55,6 +55,11 @@ class WebBridgeManager implements WebBridgeAPI {
   private _queue: DataQueue;
   private _frameBuffer: Uint8Array = new Uint8Array(0);
 
+  // RTU 时间打包：5ms 内没有收到新数据就把缓冲数据打包发送给 iframe
+  private _rtuBuffer: Uint8Array = new Uint8Array(0);
+  private _rtuTimer: ReturnType<typeof setTimeout> | null = null;
+  private static readonly RTU_TIMEOUT_MS = 5;
+
   // 初始化帧状态
   private _initSent = false;
   private _initRetryCount = 0;
@@ -111,6 +116,8 @@ class WebBridgeManager implements WebBridgeAPI {
     this.setStatus('disconnected');
     this._queue.stop();
     this._frameBuffer = new Uint8Array(0);
+    this._rtuBuffer = new Uint8Array(0);
+    if (this._rtuTimer) { clearTimeout(this._rtuTimer); this._rtuTimer = null; }
     this._initSent = false;
     this._initRetryCount = 0;
     if (this._initTimer) { clearTimeout(this._initTimer); this._initTimer = null; }
@@ -468,20 +475,28 @@ class WebBridgeManager implements WebBridgeAPI {
   }
 
   private notifyDataReceived(data: Uint8Array): void {
-    console.log('[AIBMS] Raw data received:', Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' '));
+    /* RTU 时间打包：将收到的数据追加到缓冲区，5ms 内没有新数据则打包发送 */
+    const merged = new Uint8Array(this._rtuBuffer.length + data.length);
+    merged.set(this._rtuBuffer);
+    merged.set(data, this._rtuBuffer.length);
+    this._rtuBuffer = merged;
 
-    /* 透传原始数据给 iframe，帧提取由 bms-ui 负责 */
-    this._frameCallbacks.forEach((cb) => cb([data]));
+    /* 重置定时器：每次收到数据都重新计时 */
+    if (this._rtuTimer) {
+      clearTimeout(this._rtuTimer);
+    }
+    this._rtuTimer = setTimeout(() => {
+      this._flushRtuBuffer();
+    }, WebBridgeManager.RTU_TIMEOUT_MS);
 
     /* 同时保留本地帧提取逻辑（用于初始化检测等） */
-    const merged = new Uint8Array(this._frameBuffer.length + data.length);
-    merged.set(this._frameBuffer);
-    merged.set(data, this._frameBuffer.length);
-    this._frameBuffer = merged;
+    const mergedLocal = new Uint8Array(this._frameBuffer.length + data.length);
+    mergedLocal.set(this._frameBuffer);
+    mergedLocal.set(data, this._frameBuffer.length);
+    this._frameBuffer = mergedLocal;
 
     const { frames, remainder } = extractFrames(this._frameBuffer);
     this._frameBuffer = remainder;
-    console.log('[AIBMS] Extracted frames:', frames.length, 'remainder:', remainder.length);
 
     if (frames.length > 0) {
       this._queue.ackOldestPending();
@@ -494,13 +509,22 @@ class WebBridgeManager implements WebBridgeAPI {
               clearTimeout(this._initTimer);
               this._initTimer = null;
             }
-            console.log('[AIBMS] Init frame response received');
             this._initCallbacks.forEach((cb) => cb(true, frame));
             break;
           }
         }
       }
     }
+  }
+
+  /** 将 RTU 缓冲区中的数据打包发送给 iframe */
+  private _flushRtuBuffer(): void {
+    if (this._rtuBuffer.length === 0) return;
+    const data = this._rtuBuffer;
+    this._rtuBuffer = new Uint8Array(0);
+    this._rtuTimer = null;
+    /* 透传打包后的原始数据给 iframe，帧提取由 bms-ui 负责 */
+    this._frameCallbacks.forEach((cb) => cb([data]));
   }
 
   /** 将 Bridge API 暴露到 window 对象，供 iframe 调用 */
