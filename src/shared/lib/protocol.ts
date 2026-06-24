@@ -34,8 +34,8 @@ function expectedFrameLength(data: Uint8Array): number | null {
   /* 异常响应：功能码最高位为 1，长度固定 5 字节（地址+功能码+异常码+CRC16） */
   if (funcCode & 0x80) return 5;
 
-  /* 写响应：地址(1) + 功能码(1) + CRC(2) = 4 */
-  if (isWriteFuncCode(funcCode)) return 4;
+  /* 写响应：地址(1) + 功能码(1) + 起始地址(2) + 寄存器数量(2) + CRC(2) = 8 */
+  if (isWriteFuncCode(funcCode)) return 8;
 
   /* 读响应：地址(1) + 功能码(1) + 字节计数(1) + 数据(n) + CRC(2) */
   if (isReadFuncCode(funcCode)) {

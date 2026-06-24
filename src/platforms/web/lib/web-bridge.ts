@@ -68,7 +68,7 @@ class WebBridgeManager implements WebBridgeAPI {
       serial: { ...DEFAULT_SERIAL_CONFIG },
     };
 
-    this._queue = new DataQueue({ maxSize: 64, maxRetries: 3, defaultTimeout: 5000 });
+    this._queue = new DataQueue();
     this._queue.setSendFn((data) => this._sendRaw(data));
 
     this.exposeToWindow();
@@ -134,6 +134,11 @@ class WebBridgeManager implements WebBridgeAPI {
   sendFrame(data: Uint8Array, requestId?: string): string {
     const id = this._queue.enqueue(data, requestId);
     return id;
+  }
+
+  /** 清除数据队列中所有 pending 帧（参数配置操作前调用） */
+  clearPendingFrames(): void {
+    this._queue.clearPending();
   }
 
   /** 获取数据队列状态 */
@@ -442,6 +447,11 @@ class WebBridgeManager implements WebBridgeAPI {
   /** 底层发送数据（不经过队列，由队列调用） */
   private async _sendRaw(data: Uint8Array): Promise<boolean> {
     try {
+      /* [DEBUG] 只记录写帧（功能码 0x10/0x3D/0x3E）的发送 */
+      if (data.length >= 2 && (data[1] === 0x10 || data[1] === 0x3D || data[1] === 0x3E)) {
+        console.log('[AIBMS TX] sending write frame:', Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' '), 'len=', data.length);
+      }
+
       if (this._config.type === 'bluetooth') {
         if (!this._bluetoothCharacteristic) return false;
         /* MTU 512 减去 3 字节 ATT 头 = 509 字节有效载荷 */
@@ -479,7 +489,17 @@ class WebBridgeManager implements WebBridgeAPI {
     this._frameBuffer = remainder;
 
     if (frames.length > 0) {
-      this._queue.ackOldestPending();
+      /* [DEBUG] 只记录写响应帧（功能码 0x10/0x3D/0x3E，长度8）的提取 */
+      for (const frame of frames) {
+        if (frame.length >= 2 && (frame[1] === 0x10 || frame[1] === 0x3D || frame[1] === 0x3E)) {
+          console.log('[AIBMS RX] write response frame:', Array.from(frame).map(b => b.toString(16).padStart(2, '0')).join(' '), 'len=', frame.length);
+        }
+      }
+
+      /* 每个提取的帧都 ack 最早的 pending 项（多帧同时到达时逐个 ack） */
+      for (let i = 0; i < frames.length; i++) {
+        this._queue.ackOldestPending();
+      }
 
       /* 完整帧发送给 iframe（每帧独立发送，不再透传原始数据） */
       this._frameCallbacks.forEach((cb) => cb(frames));
