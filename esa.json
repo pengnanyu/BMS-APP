@@ -1,0 +1,7 @@
+{
+  "name": "bms-app",
+  "description": "AIBMS Smart Battery Management System",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "outputDirectory": "dist"
+}
