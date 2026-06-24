@@ -39,7 +39,7 @@ class WebBridgeManager implements WebBridgeAPI {
   private _config: ConnectionConfig;
   private _dataCallbacks: Set<DataReceiveCallback> = new Set();
   private _statusCallbacks: Set<ConnectionStatusCallback> = new Set();
-  private _frameCallbacks: Set<(frames: Uint8Array[]) => void> = new Set();
+  private _rawDataCallbacks: Set<(data: Uint8Array) => void> = new Set();
 
   // Web Bluetooth API
   private _bluetoothDevice: BluetoothDevice | null = null;
@@ -136,7 +136,7 @@ class WebBridgeManager implements WebBridgeAPI {
     return id;
   }
 
-  /** 清除数据队列中所有 pending 帧（参数配置操作前调用） */
+  /** 清除数据队列中所有 pending 帧 */
   clearPendingFrames(): void {
     this._queue.clearPending();
   }
@@ -197,11 +197,11 @@ class WebBridgeManager implements WebBridgeAPI {
     };
   }
 
-  /** 注册完整帧接收回调（已通过 RTU 分隔符和 CRC16 校验） */
-  onFramesReceived(callback: (frames: Uint8Array[]) => void): () => void {
-    this._frameCallbacks.add(callback);
+  /** 注册原始数据接收回调（透传蓝牙/串口原始数据，由 bms-ui 端做帧提取） */
+  onRawDataReceived(callback: (data: Uint8Array) => void): () => void {
+    this._rawDataCallbacks.add(callback);
     return () => {
-      this._frameCallbacks.delete(callback);
+      this._rawDataCallbacks.delete(callback);
     };
   }
 
@@ -447,11 +447,6 @@ class WebBridgeManager implements WebBridgeAPI {
   /** 底层发送数据（不经过队列，由队列调用） */
   private async _sendRaw(data: Uint8Array): Promise<boolean> {
     try {
-      /* [DEBUG] 只记录写帧（功能码 0x10/0x3D/0x3E）的发送 */
-      if (data.length >= 2 && (data[1] === 0x10 || data[1] === 0x3D || data[1] === 0x3E)) {
-        console.log('[AIBMS TX] sending write frame:', Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' '), 'len=', data.length);
-      }
-
       if (this._config.type === 'bluetooth') {
         if (!this._bluetoothCharacteristic) return false;
         /* MTU 512 减去 3 字节 ATT 头 = 509 字节有效载荷 */
@@ -478,47 +473,37 @@ class WebBridgeManager implements WebBridgeAPI {
   }
 
   private notifyDataReceived(data: Uint8Array): void {
-    /* 追加到帧缓冲区 */
+    /* APP 只负责收发透传，不做帧提取
+     * 原始数据直接发给 iframe，由 bms-ui 端做帧缓冲+提取+CRC校验
+     * 仅在 IDLE 时（未加载 iframe）做本地初始化检测 */
+
+    /* 本地帧缓冲区仅用于初始化检测 */
     const merged = new Uint8Array(this._frameBuffer.length + data.length);
     merged.set(this._frameBuffer);
     merged.set(data, this._frameBuffer.length);
     this._frameBuffer = merged;
 
-    /* [DEBUG] 记录所有原始接收数据（诊断写响应丢失） */
-    console.log('[AIBMS RX] raw:', Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' '), 'bufLen=', this._frameBuffer.length);
+    /* 透传原始数据给 iframe */
+    this._rawDataCallbacks.forEach((cb) => cb(data));
 
-    /* 基于帧结构 + CRC16 提取完整帧 */
-    const { frames, remainder } = extractFrames(this._frameBuffer);
-    this._frameBuffer = remainder;
-
-    if (frames.length > 0) {
-      /* [DEBUG] 记录所有提取的帧 */
+    /* 本地初始化检测（仅 IDLE 时，iframe 还没加载） */
+    if (!this._initSent) {
+      const { frames, remainder } = extractFrames(this._frameBuffer);
+      this._frameBuffer = remainder;
       for (const frame of frames) {
-        console.log('[AIBMS RX] frame:', Array.from(frame).map(b => b.toString(16).padStart(2, '0')).join(' '), 'len=', frame.length);
-      }
-
-      /* 每个提取的帧都 ack 最早的 pending 项（多帧同时到达时逐个 ack） */
-      for (let i = 0; i < frames.length; i++) {
-        this._queue.ackOldestPending();
-      }
-
-      /* 完整帧发送给 iframe（每帧独立发送，不再透传原始数据） */
-      this._frameCallbacks.forEach((cb) => cb(frames));
-
-      /* 本地初始化检测 */
-      if (!this._initSent) {
-        for (const frame of frames) {
-          if (frame.length >= 2 && frame[0] === 0x00 && !(frame[1] & 0x80)) {
-            this._initSent = true;
-            if (this._initTimer) {
-              clearTimeout(this._initTimer);
-              this._initTimer = null;
-            }
-            this._initCallbacks.forEach((cb) => cb(true, frame));
-            break;
+        if (frame.length >= 2 && frame[0] === 0x00 && !(frame[1] & 0x80)) {
+          this._initSent = true;
+          if (this._initTimer) {
+            clearTimeout(this._initTimer);
+            this._initTimer = null;
           }
+          this._initCallbacks.forEach((cb) => cb(true, frame));
+          break;
         }
       }
+    } else {
+      /* 初始化完成后，帧缓冲区不再需要（数据已透传给 iframe） */
+      this._frameBuffer = new Uint8Array(0);
     }
   }
 

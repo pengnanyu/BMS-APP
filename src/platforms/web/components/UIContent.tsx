@@ -41,15 +41,13 @@ export function UIContent() {
     return unsub;
   }, []);
 
-  /* 监听完整帧，同步给 iframe（协议级通信） */
+  /* 监听原始数据，透传给 iframe（由 bms-ui 端做帧提取） */
   useEffect(() => {
-    const unsub = webBridge.onFramesReceived((frames) => {
-      for (const frame of frames) {
-        sendMessageToIframe({
-          type: 'bms:frame-received',
-          payload: { frame: Array.from(frame) },
-        });
-      }
+    const unsub = webBridge.onRawDataReceived((data) => {
+      sendMessageToIframe({
+        type: 'bms:raw-data',
+        payload: { data: Array.from(data) },
+      });
     });
     return unsub;
   }, []);

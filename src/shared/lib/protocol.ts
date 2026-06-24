@@ -47,7 +47,7 @@ function expectedFrameLength(data: Uint8Array): number | null {
   return null;
 }
 
-/** 从原始字节流中提取完整的 Modbus RTU 帧 */
+/** 从原始字节流中提取完整的 Modbus RTU 帧（仅用于 IDLE 初始化检测） */
 export function extractFrames(data: Uint8Array): { frames: Uint8Array[]; remainder: Uint8Array } {
   const frames: Uint8Array[] = [];
   let offset = 0;
@@ -55,7 +55,6 @@ export function extractFrames(data: Uint8Array): { frames: Uint8Array[]; remaind
   while (offset < data.length) {
     const remaining = data.slice(offset);
 
-    /* 跳过无效起始字节（非有效地址码范围 0x00-0xF7） */
     if (remaining[0] > 0xf7) {
       offset++;
       continue;
@@ -63,11 +62,7 @@ export function extractFrames(data: Uint8Array): { frames: Uint8Array[]; remaind
 
     const expected = expectedFrameLength(remaining);
     if (expected === null) {
-      /* 未知功能码：尝试 CRC16 扫描找到帧边界 */
-      if (remaining.length < 5) {
-        /* 数据太短，无法扫描，保留在缓冲区等待更多数据 */
-        break;
-      }
+      if (remaining.length < 5) break;
       let found = false;
       for (let len = 5; len <= Math.min(remaining.length, 256); len++) {
         if (verifyCrc16(remaining.slice(0, len))) {
@@ -77,25 +72,17 @@ export function extractFrames(data: Uint8Array): { frames: Uint8Array[]; remaind
           break;
         }
       }
-      if (!found) {
-        /* CRC 扫描也找不到，跳过当前字节 */
-        offset++;
-      }
+      if (!found) offset++;
       continue;
     }
 
-    if (remaining.length < expected) {
-      /* 数据不完整，等待更多数据 */
-      break;
-    }
+    if (remaining.length < expected) break;
 
     const candidate = remaining.slice(0, expected);
     if (verifyCrc16(candidate)) {
       frames.push(candidate);
       offset += expected;
     } else {
-      /* CRC 校验失败，跳过当前字节继续尝试 */
-      console.log('[AIBMS] CRC fail:', Array.from(candidate).map(b => b.toString(16).padStart(2, '0')).join(' '), 'expected=', expected);
       offset++;
     }
   }
