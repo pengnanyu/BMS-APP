@@ -57,7 +57,6 @@ export class DataQueue {
   clearPending(): void {
     this._queue = this._queue.filter((i) => !i.pending);
     this._processing = false;
-    this._processQueue();
   }
 
   start(): void {

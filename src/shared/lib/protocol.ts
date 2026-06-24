@@ -95,6 +95,7 @@ export function extractFrames(data: Uint8Array): { frames: Uint8Array[]; remaind
       offset += expected;
     } else {
       /* CRC 校验失败，跳过当前字节继续尝试 */
+      console.log('[AIBMS] CRC fail:', Array.from(candidate).map(b => b.toString(16).padStart(2, '0')).join(' '), 'expected=', expected);
       offset++;
     }
   }

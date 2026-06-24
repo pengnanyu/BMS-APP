@@ -136,9 +136,10 @@ class WebBridgeManager implements WebBridgeAPI {
     return id;
   }
 
-  /** 清除数据队列中所有 pending 帧（参数配置操作前调用） */
+  /** 清除数据队列中所有 pending 帧并重置帧缓冲区（参数配置操作前调用） */
   clearPendingFrames(): void {
     this._queue.clearPending();
+    this._frameBuffer = new Uint8Array(0);
   }
 
   /** 获取数据队列状态 */
@@ -484,16 +485,17 @@ class WebBridgeManager implements WebBridgeAPI {
     merged.set(data, this._frameBuffer.length);
     this._frameBuffer = merged;
 
+    /* [DEBUG] 记录所有原始接收数据（诊断写响应丢失） */
+    console.log('[AIBMS RX] raw:', Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' '), 'bufLen=', this._frameBuffer.length);
+
     /* 基于帧结构 + CRC16 提取完整帧 */
     const { frames, remainder } = extractFrames(this._frameBuffer);
     this._frameBuffer = remainder;
 
     if (frames.length > 0) {
-      /* [DEBUG] 只记录写响应帧（功能码 0x10/0x3D/0x3E，长度8）的提取 */
+      /* [DEBUG] 记录所有提取的帧 */
       for (const frame of frames) {
-        if (frame.length >= 2 && (frame[1] === 0x10 || frame[1] === 0x3D || frame[1] === 0x3E)) {
-          console.log('[AIBMS RX] write response frame:', Array.from(frame).map(b => b.toString(16).padStart(2, '0')).join(' '), 'len=', frame.length);
-        }
+        console.log('[AIBMS RX] frame:', Array.from(frame).map(b => b.toString(16).padStart(2, '0')).join(' '), 'len=', frame.length);
       }
 
       /* 每个提取的帧都 ack 最早的 pending 项（多帧同时到达时逐个 ack） */
