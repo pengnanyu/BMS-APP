@@ -108,8 +108,6 @@ export function UIContent() {
       case 'bms:frame-send': {
         const payload = msg.payload as { frame?: number[]; requestId?: string };
         if (payload.frame && Array.isArray(payload.frame)) {
-          /* 清除残留 pending 帧，避免轮询帧阻塞写帧 */
-          webBridge.clearPendingFrames();
           const data = new Uint8Array(payload.frame);
           const queueId = webBridge.sendFrame(data, payload.requestId);
           /* 回复队列 ID */

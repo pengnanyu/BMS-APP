@@ -136,10 +136,9 @@ class WebBridgeManager implements WebBridgeAPI {
     return id;
   }
 
-  /** 清除数据队列中所有 pending 帧并重置帧缓冲区（参数配置操作前调用） */
+  /** 清除数据队列中所有 pending 帧（参数配置操作前调用） */
   clearPendingFrames(): void {
     this._queue.clearPending();
-    this._frameBuffer = new Uint8Array(0);
   }
 
   /** 获取数据队列状态 */

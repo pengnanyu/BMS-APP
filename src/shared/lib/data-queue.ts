@@ -16,7 +16,7 @@ export interface QueueItem {
 }
 
 const QUEUE_MAX_SIZE = 32;
-const PENDING_TIMEOUT = 5000;
+const PENDING_TIMEOUT = 2000;
 
 export class DataQueue {
   private _queue: QueueItem[] = [];
@@ -30,6 +30,14 @@ export class DataQueue {
   }
 
   enqueue(data: Uint8Array, requestId?: string): string {
+    /* 新帧入队前，清除所有 pending 项（确保队列中最多一个 pending 帧）
+     *  这样新帧能立即发送，不会被旧帧阻塞 */
+    const hadPending = this._queue.some((i) => i.pending);
+    if (hadPending) {
+      this._queue = this._queue.filter((i) => !i.pending);
+      this._processing = false;
+    }
+
     if (this._queue.length >= QUEUE_MAX_SIZE) {
       this._queue.shift();
     }
